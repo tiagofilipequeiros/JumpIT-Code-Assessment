@@ -15,7 +15,8 @@ public class ProductRequest
     public string? Description { get; init; }
 
     [Required]
-    [Range(typeof(decimal), "0", ProductLimits.PriceMax)]
+    // Invariant culture: the limits are written with a "." regardless of the server language.
+    [Range(typeof(decimal), "0", ProductLimits.PriceMax, ParseLimitsInInvariantCulture = true, ConvertValueInInvariantCulture = true)]
     [MaxDecimalPlaces(ProductLimits.PriceScale)]
     public decimal? Price { get; init; }
 
