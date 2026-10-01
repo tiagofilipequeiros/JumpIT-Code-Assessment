@@ -1,0 +1,49 @@
+<mat-toolbar class="app-toolbar">
+  <!-- Phones: links collapse into a menu -->
+  <button mat-icon-button class="d-md-none" [matMenuTriggerFor]="navMenu" aria-label="Open navigation">
+    <mat-icon>menu</mat-icon>
+  </button>
+  <mat-menu #navMenu="matMenu">
+    @for (link of links(); track link.path) {
+      <a mat-menu-item [routerLink]="link.path">
+        <mat-icon>{{ link.icon }}</mat-icon>
+        <span>{{ link.label }}</span>
+      </a>
+    }
+  </mat-menu>
+
+  <a class="brand" routerLink="/">
+    <mat-icon>biotech</mat-icon>
+    <span class="d-none d-sm-inline">Product Manager</span>
+  </a>
+
+  <nav class="d-none d-md-flex ms-3 gap-1">
+    @for (link of links(); track link.path) {
+      <a
+        mat-button
+        [routerLink]="link.path"
+        routerLinkActive="active-link"
+        [routerLinkActiveOptions]="{ exact: link.path === '/' }"
+      >
+        <mat-icon>{{ link.icon }}</mat-icon>
+        {{ link.label }}
+      </a>
+    }
+  </nav>
+
+  <span class="flex-grow-1"></span>
+
+  <mat-form-field class="user-select" appearance="outline" subscriptSizing="dynamic">
+    <mat-icon matPrefix>account_circle</mat-icon>
+    <mat-select
+      [value]="currentUser()?.id"
+      (valueChange)="selectUser($event)"
+      placeholder="Select user"
+      aria-label="Current user"
+    >
+      @for (user of users(); track user.id) {
+        <mat-option [value]="user.id">{{ user.name }} · {{ user.role }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+</mat-toolbar>

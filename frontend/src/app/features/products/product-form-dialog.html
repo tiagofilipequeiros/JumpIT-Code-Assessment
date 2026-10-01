@@ -1,0 +1,55 @@
+<h2 mat-dialog-title>{{ product ? 'Edit product ' + product.id : 'New product' }}</h2>
+
+<form [formGroup]="form" (ngSubmit)="save()" novalidate>
+  <mat-dialog-content class="d-flex flex-column gap-1">
+    <mat-form-field>
+      <mat-label>Name</mat-label>
+      <input matInput formControlName="name" [maxlength]="limits.NameMaxLength" cdkFocusInitial />
+      <mat-hint align="end">{{ form.controls.name.value.length }} / {{ limits.NameMaxLength }}</mat-hint>
+      <mat-error>{{ errorMessage(form.controls.name) }}</mat-error>
+    </mat-form-field>
+
+    <mat-form-field>
+      <mat-label>Description</mat-label>
+      <textarea matInput formControlName="description" rows="3" [maxlength]="limits.DescriptionMaxLength"></textarea>
+      <mat-hint align="end">{{ form.controls.description.value.length }} / {{ limits.DescriptionMaxLength }}</mat-hint>
+      <mat-error>{{ errorMessage(form.controls.description) }}</mat-error>
+    </mat-form-field>
+
+    <div class="row g-2">
+      <mat-form-field class="col-12 col-sm-6">
+        <mat-label>Price</mat-label>
+        <input matInput type="number" formControlName="price" min="0" step="0.01" inputmode="decimal" />
+        <span matTextPrefix>€&nbsp;</span>
+        <mat-error>{{ errorMessage(form.controls.price) }}</mat-error>
+      </mat-form-field>
+
+      <mat-form-field class="col-12 col-sm-6">
+        <mat-label>Stock</mat-label>
+        <input matInput type="number" formControlName="stock" min="0" step="1" inputmode="numeric" />
+        <mat-error>{{ errorMessage(form.controls.stock) }}</mat-error>
+      </mat-form-field>
+    </div>
+
+    <mat-form-field>
+      <mat-label>Category</mat-label>
+      <mat-select formControlName="categoryId">
+        @for (category of categories; track category.id) {
+          <mat-option [value]="category.id">
+            {{ category.name }}{{ category.isActive ? '' : ' (disabled)' }}
+          </mat-option>
+        }
+      </mat-select>
+      <mat-error>{{ errorMessage(form.controls.categoryId) }}</mat-error>
+    </mat-form-field>
+  </mat-dialog-content>
+
+  @if (saving()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" mat-dialog-close>Cancel</button>
+    <button mat-flat-button type="submit" [disabled]="saving()">Save</button>
+  </mat-dialog-actions>
+</form>

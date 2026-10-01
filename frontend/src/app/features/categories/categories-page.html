@@ -1,0 +1,80 @@
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+  <h1 class="page-title mb-0 me-auto">Categories</h1>
+  @if (canViewHidden()) {
+    <mat-slide-toggle [checked]="includeHidden()" (change)="setIncludeHidden($event.checked)">Show hidden</mat-slide-toggle>
+  }
+  @if (canEdit()) {
+    <button mat-flat-button (click)="openForm()">
+      <mat-icon>add</mat-icon>
+      New category
+    </button>
+  }
+</div>
+
+<div class="table-card">
+  @if (loading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  <div class="table-responsive">
+    <table mat-table [dataSource]="categories()" class="w-100">
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef>Name</th>
+        <td mat-cell *matCellDef="let c" class="fw-medium">{{ c.name }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="products">
+        <th mat-header-cell *matHeaderCellDef class="text-end">Products</th>
+        <td mat-cell *matCellDef="let c" class="text-end">{{ c.productCount }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef>Status</th>
+        <td mat-cell *matCellDef="let c">
+          @if (c.isProtected) {
+            <span class="badge-status badge-warning">Protected</span>
+          } @else if (!c.isActive) {
+            <span class="badge-status badge-disabled">Disabled</span>
+          } @else {
+            <span class="badge-status badge-active">Active</span>
+          }
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef class="text-end"><span class="visually-hidden">Actions</span></th>
+        <td mat-cell *matCellDef="let c" class="text-end">
+          @if (!c.isProtected) {
+            <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Category actions">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+            <mat-menu #menu="matMenu" xPosition="before">
+              @if (canEdit()) {
+                <button mat-menu-item (click)="openForm(c)"><mat-icon>edit</mat-icon>Rename</button>
+              }
+              @if (canToggle()) {
+                <button mat-menu-item (click)="toggleActive(c)">
+                  <mat-icon>{{ c.isActive ? 'visibility_off' : 'visibility' }}</mat-icon>
+                  {{ c.isActive ? 'Disable' : 'Enable' }}
+                </button>
+              }
+              @if (canDelete()) {
+                <button mat-menu-item (click)="delete(c)" class="text-danger">
+                  <mat-icon class="text-danger">delete</mat-icon>Delete
+                </button>
+              }
+            </mat-menu>
+          }
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columns()"></tr>
+      <tr mat-row *matRowDef="let row; columns: columns()" [class.row-hidden]="!row.isActive"></tr>
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell p-4 text-center text-muted" [attr.colspan]="columns().length">
+          {{ loading() ? 'Loading…' : 'No categories.' }}
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>

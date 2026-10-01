@@ -1,20 +1,15 @@
-import { Component, inject, signal } from '@angular/core';
-import { MatCardModule } from '@angular/material/card';
-import { HealthService } from './health.service';
+import { Component } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
+import { Header } from './layout/header/header';
 
 @Component({
-  imports: [MatCardModule],
   selector: 'app-root',
-  styleUrl: './app.css',
-  templateUrl: './app.html',
+  imports: [RouterOutlet, Header],
+  template: `
+    <app-header />
+    <main class="container-xl py-3 py-md-4">
+      <router-outlet />
+    </main>
+  `,
 })
-export class App {
-  protected readonly backendStatus = signal('loading...');
-
-  constructor() {
-    inject(HealthService).getHealth().subscribe({
-      next: (response) => this.backendStatus.set(response.status),
-      error: () => this.backendStatus.set('unavailable'),
-    });
-  }
-}
+export class App {}

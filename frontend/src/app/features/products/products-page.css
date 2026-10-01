@@ -1,0 +1,25 @@
+.description {
+  max-width: 420px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stock {
+  display: inline-block;
+  min-width: 2.5rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.stock-low {
+  background: var(--app-warning-container);
+  color: var(--app-on-warning-container);
+}
+
+.stock-out {
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+}
+

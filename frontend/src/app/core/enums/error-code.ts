@@ -1,0 +1,44 @@
+// Same values as the backend ErrorCode enum. The UI reacts to the code, never to the message text.
+export enum ErrorCode {
+  Unexpected = 'Unexpected',
+  RequestFailed = 'RequestFailed',
+  ValidationFailed = 'ValidationFailed',
+  NotFound = 'NotFound',
+  UserRequired = 'UserRequired',
+  UserNotFound = 'UserNotFound',
+  Forbidden = 'Forbidden',
+  ConcurrencyConflict = 'ConcurrencyConflict',
+  ProductNotFound = 'ProductNotFound',
+  InsufficientStock = 'InsufficientStock',
+  StockLimitExceeded = 'StockLimitExceeded',
+  InvalidQuantity = 'InvalidQuantity',
+  InvalidStockRange = 'InvalidStockRange',
+  CategoryNotFound = 'CategoryNotFound',
+  InvalidCategory = 'InvalidCategory',
+  CategoryNameTaken = 'CategoryNameTaken',
+  CategoryProtected = 'CategoryProtected',
+  // Frontend only: the API could not be reached.
+  NetworkError = 'NetworkError',
+}
+
+// What the user sees for each error code.
+export const ERROR_MESSAGES: Record<ErrorCode, string> = {
+  [ErrorCode.Unexpected]: 'Something went wrong. Please try again.',
+  [ErrorCode.RequestFailed]: 'The request could not be processed.',
+  [ErrorCode.ValidationFailed]: 'Please check the highlighted fields.',
+  [ErrorCode.NotFound]: 'The requested item was not found.',
+  [ErrorCode.UserRequired]: 'Please select a user first.',
+  [ErrorCode.UserNotFound]: 'This user does not exist.',
+  [ErrorCode.Forbidden]: 'You do not have permission to do this.',
+  [ErrorCode.ConcurrencyConflict]: 'Someone else changed this item. The list was reloaded, please try again.',
+  [ErrorCode.ProductNotFound]: 'This product no longer exists or is hidden.',
+  [ErrorCode.InsufficientStock]: 'Not enough stock for this quantity.',
+  [ErrorCode.StockLimitExceeded]: 'This would exceed the maximum stock.',
+  [ErrorCode.InvalidQuantity]: 'The quantity is out of the allowed range.',
+  [ErrorCode.InvalidStockRange]: 'Minimum stock cannot be greater than maximum stock.',
+  [ErrorCode.CategoryNotFound]: 'This category no longer exists.',
+  [ErrorCode.InvalidCategory]: 'This category cannot be used.',
+  [ErrorCode.CategoryNameTaken]: 'A category with this name already exists.',
+  [ErrorCode.CategoryProtected]: 'The Uncategorized category cannot be changed.',
+  [ErrorCode.NetworkError]: 'Cannot reach the server. Is the backend running?',
+};
