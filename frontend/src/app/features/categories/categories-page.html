@@ -3,6 +3,9 @@
   @if (canViewHidden()) {
     <mat-slide-toggle [checked]="includeHidden()" (change)="setIncludeHidden($event.checked)">Show hidden</mat-slide-toggle>
   }
+  <button mat-icon-button (click)="load()" [disabled]="loading()" matTooltip="Refresh" aria-label="Refresh">
+    <mat-icon>refresh</mat-icon>
+  </button>
   @if (canEdit()) {
     <button mat-flat-button (click)="openForm()">
       <mat-icon>add</mat-icon>

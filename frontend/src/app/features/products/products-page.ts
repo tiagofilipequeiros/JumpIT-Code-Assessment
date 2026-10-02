@@ -57,6 +57,8 @@ export enum FilterMode {
     MatTooltipModule,
   ],
   templateUrl: './products-page.html',
+  // Coming back to the tab reloads, so changes made elsewhere (another user, Swagger) show up.
+  host: { '(document:visibilitychange)': 'reloadWhenVisible()' },
   styleUrl: './products-page.css',
 })
 export class ProductsPage {
@@ -122,6 +124,12 @@ export class ProductsPage {
         this.loadCategories();
       });
     });
+  }
+
+  protected reloadWhenVisible(): void {
+    if (document.visibilityState === 'visible') {
+      this.load();
+    }
   }
 
   protected load(): void {

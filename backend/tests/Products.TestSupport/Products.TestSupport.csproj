@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Shared by the integration and acceptance tests: real SQL Server container + the API started in memory. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="Testcontainers.MsSql" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Products.Api/Products.Api.csproj" />
+  </ItemGroup>
+</Project>

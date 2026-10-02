@@ -51,8 +51,7 @@ Needs the database container:
 
 ```
 docker compose up -d db
-cd backend
-dotnet run
+dotnet run --project backend/src/Products.Api
 ```
 
 ## Run frontend only
@@ -65,11 +64,17 @@ npm start
 
 ## Tests
 
-Backend (unit + integration tests against a real SQL Server started by Testcontainers, so Docker must be running):
+Backend, from the repository root (integration and acceptance tests start a real SQL Server with Testcontainers, so Docker must be running):
 
 ```
 dotnet test
 ```
+
+| Project | What it tests |
+|---|---|
+| `Products.UnitTests` | Business rules in the services with fake repositories (no database), validation, permissions, error mappings |
+| `Products.IntegrationTests` | The API over HTTP against SQL Server: every endpoint, roles, edge cases, concurrency (parallel creates, parallel stock decrements, duplicate category names) |
+| `Products.AcceptanceTests` | BDD scenarios in plain English (Reqnroll / Gherkin, see `Features/*.feature`) describing user outcomes |
 
 Frontend (Vitest):
 
@@ -121,8 +126,7 @@ docker compose down -v
 Create a new migration (needs `dotnet tool install -g dotnet-ef`):
 
 ```
-cd backend
-dotnet ef migrations add <Name>
+dotnet ef migrations add <Name> --project backend/src/Products.Infrastructure --startup-project backend/src/Products.Api --output-dir Persistence/Migrations
 ```
 
 Tables: `Products` (+ `ProductsHistory`), `Categories`, `Users`, `UserMetrics`.
@@ -145,22 +149,25 @@ In a real deployment they would move to a secret store (e.g. Azure Key Vault, or
 ## Project structure
 
 ```
-backend/        ASP.NET Core API
-  Controllers/  HTTP only, one line per action
-  Services/     business logic
-  Dtos/         request/response classes (validation rules here)
-  Models/       EF Core entities and limits
-  Data/         DbContext, seed data
-  Migrations/   EF Core migrations (code first)
-  Errors/       error codes, exception handler
-  Auth/         current user, role permissions
-tests/          backend tests (xUnit)
+backend/
+  src/
+    Products.Domain/          entities, limits, roles/permissions, error codes (no dependencies)
+    Products.Application/     use cases (services), DTOs, interfaces for repositories / unit of work / current user
+    Products.Infrastructure/  EF Core: DbContext, migrations, seed data, repositories, unit of work
+    Products.Api/             controllers (HTTP only), error handling, Swagger, wiring
+  tests/
+    Products.UnitTests/
+    Products.IntegrationTests/
+    Products.AcceptanceTests/
+    Products.TestSupport/     shared by integration + acceptance tests (SQL Server container, API factory)
 frontend/src/app/
-  core/         enums, models, services, interceptors, guard
-  layout/       header
-  features/     products, categories, metrics pages
-  shared/       confirm dialog
+  core/                       enums, models, services, interceptors, guard
+  layout/                     header
+  features/                   products, categories, metrics pages
+  shared/                     confirm dialog
 ```
+
+Dependencies point inwards: Api → Infrastructure → Application → Domain. Package versions are defined once in `backend/Directory.Packages.props`.
 
 ## Decisions
 
@@ -285,5 +292,5 @@ Not asked for in the assessment. Added because they make the project closer to a
 - [x] 28. Category delete moves products to Uncategorized (with warning)
 - [x] 29. UserMetrics (Entity, Action, EntityId, Details)
 - [ ] 30. Metrics tab (to be defined; page exists as a placeholder, data is already recorded)
-- [ ] 31. Optional: BDD tests
+- [x] 31. Optional: BDD tests
 - [ ] 32. Optional: two backend instances to prove unique IDs (covered by the parallel-create test)

@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Use cases (services), DTOs and the interfaces they need (repositories, unit of work, current user). -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Products.Domain/Products.Domain.csproj" />
+  </ItemGroup>
+</Project>

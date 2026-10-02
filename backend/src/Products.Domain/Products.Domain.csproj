@@ -1,0 +1,3 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Entities, business rules and errors. No dependencies on frameworks or other layers. -->
+</Project>

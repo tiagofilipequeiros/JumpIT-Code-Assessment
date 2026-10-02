@@ -1,5 +1,8 @@
 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
   <h1 class="page-title mb-0 me-auto">Products</h1>
+  <button mat-icon-button (click)="load()" [disabled]="loading()" matTooltip="Refresh" aria-label="Refresh">
+    <mat-icon>refresh</mat-icon>
+  </button>
   @if (canEdit()) {
     <button mat-flat-button (click)="openForm()">
       <mat-icon>add</mat-icon>

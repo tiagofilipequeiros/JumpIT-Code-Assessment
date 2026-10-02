@@ -6,6 +6,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTableModule } from '@angular/material/table';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { filter, switchMap } from 'rxjs';
 import { FeedbackMessage } from '../../core/enums/feedback-message';
 import { Permission } from '../../core/enums/permission';
@@ -18,8 +19,10 @@ import { CategoryFormDialog } from './category-form-dialog';
 
 @Component({
   selector: 'app-categories-page',
-  imports: [MatTableModule, MatButtonModule, MatIconModule, MatMenuModule, MatProgressBarModule, MatSlideToggleModule],
+  imports: [MatTableModule, MatButtonModule, MatIconModule, MatMenuModule, MatProgressBarModule, MatSlideToggleModule, MatTooltipModule],
   templateUrl: './categories-page.html',
+  // Coming back to the tab reloads, so changes made elsewhere (another user, Swagger) show up.
+  host: { '(document:visibilitychange)': 'reloadWhenVisible()' },
 })
 export class CategoriesPage {
   private readonly categoriesService = inject(CategoriesService);
@@ -53,6 +56,12 @@ export class CategoriesPage {
         this.load();
       });
     });
+  }
+
+  protected reloadWhenVisible(): void {
+    if (document.visibilityState === 'visible') {
+      this.load();
+    }
   }
 
   protected load(): void {

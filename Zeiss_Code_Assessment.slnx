@@ -1,8 +1,13 @@
 <Solution>
-  <Folder Name="/backend/">
-    <Project Path="backend/Backend.csproj" />
+  <Folder Name="/src/">
+    <Project Path="backend/src/Products.Domain/Products.Domain.csproj" />
+    <Project Path="backend/src/Products.Application/Products.Application.csproj" />
+    <Project Path="backend/src/Products.Infrastructure/Products.Infrastructure.csproj" />
+    <Project Path="backend/src/Products.Api/Products.Api.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/Backend.Tests/Backend.Tests.csproj" />
+    <Project Path="backend/tests/Products.UnitTests/Products.UnitTests.csproj" />
+    <Project Path="backend/tests/Products.IntegrationTests/Products.IntegrationTests.csproj" />
+    <Project Path="backend/tests/Products.AcceptanceTests/Products.AcceptanceTests.csproj" />
   </Folder>
 </Solution>
