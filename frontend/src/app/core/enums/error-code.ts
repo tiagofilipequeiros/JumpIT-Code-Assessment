@@ -17,6 +17,7 @@ export enum ErrorCode {
   InvalidCategory = 'InvalidCategory',
   CategoryNameTaken = 'CategoryNameTaken',
   CategoryProtected = 'CategoryProtected',
+  InvalidTimeRange = 'InvalidTimeRange',
   // Frontend only: the API could not be reached.
   NetworkError = 'NetworkError',
 }
@@ -40,5 +41,6 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   [ErrorCode.InvalidCategory]: 'This category cannot be used.',
   [ErrorCode.CategoryNameTaken]: 'A category with this name already exists.',
   [ErrorCode.CategoryProtected]: 'The Uncategorized category cannot be changed.',
+  [ErrorCode.InvalidTimeRange]: 'This time range is not available.',
   [ErrorCode.NetworkError]: 'Cannot reach the server. Is the backend running?',
 };

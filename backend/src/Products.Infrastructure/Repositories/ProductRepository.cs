@@ -108,12 +108,8 @@ public class ProductRepository(AppDbContext db) : IProductRepository
                 .SetProperty(p => p.UpdatedByUserId, userId),
                 cancellationToken);
 
-    // The one visibility rule for every product query: normal users only see active products
-    // in active, real categories.
     private IQueryable<Product> Visible(bool includeHidden) =>
-        includeHidden
-            ? db.Products
-            : db.Products.Where(p => p.IsActive && p.Category.IsActive && p.CategoryId != Category.UncategorizedId);
+        includeHidden ? db.Products : db.Products.OnlyVisible();
 
     private static IQueryable<Product> WithDetails(IQueryable<Product> query) =>
         query.AsNoTracking().Include(p => p.Category).Include(p => p.UpdatedByUser);

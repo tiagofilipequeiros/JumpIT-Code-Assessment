@@ -26,17 +26,17 @@
         <mat-form-field class="col-12 col-sm" subscriptSizing="dynamic">
           <mat-label>Search by name</mat-label>
           <mat-icon matPrefix>search</mat-icon>
-          <input matInput formControlName="name" placeholder="e.g. objective" />
+          <input matInput formControlName="name" name="search" autocomplete="off" placeholder="e.g. objective…" />
         </mat-form-field>
       }
       @case (FilterMode.StockLevel) {
         <mat-form-field class="col-6 col-sm-3 col-lg-2" subscriptSizing="dynamic">
           <mat-label>Min stock</mat-label>
-          <input matInput type="number" formControlName="min" min="0" />
+          <input matInput type="number" formControlName="min" name="minStock" autocomplete="off" inputmode="numeric" min="0" />
         </mat-form-field>
         <mat-form-field class="col-6 col-sm-3 col-lg-2" subscriptSizing="dynamic">
           <mat-label>Max stock</mat-label>
-          <input matInput type="number" formControlName="max" min="0" />
+          <input matInput type="number" formControlName="max" name="maxStock" autocomplete="off" inputmode="numeric" min="0" />
         </mat-form-field>
       }
     }

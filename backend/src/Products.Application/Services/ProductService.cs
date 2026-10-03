@@ -13,7 +13,7 @@ public class ProductService(
     IUserRepository users,
     IUnitOfWork unitOfWork,
     CurrentUser currentUser,
-    MetricsService metrics,
+    UserMetricService metrics,
     TimeProvider clock)
 {
     public async Task<List<ProductResponse>> GetAllAsync(bool includeHidden, CancellationToken cancellationToken) =>
@@ -208,7 +208,8 @@ public class ProductService(
                 MetricEntity.Product,
                 increase ? MetricAction.AddStock : MetricAction.DecrementStock,
                 id,
-                $"Stock {(increase ? "+" : "-")}{quantity} ({newStock - delta} → {newStock})");
+                $"Stock {(increase ? "+" : "-")}{quantity} ({newStock - delta} → {newStock})",
+                quantity);
             await unitOfWork.SaveChangesAsync(cancellationToken);
             return newStock;
         }, cancellationToken);

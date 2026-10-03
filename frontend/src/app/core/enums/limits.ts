@@ -9,7 +9,7 @@ export enum ProductLimits {
   StockMax = 1000000,
   QuantityMin = 1,
   QuantityMax = 100000,
-  LowStock = 5,
+  LowStockThreshold = 5,
 }
 
 export enum CategoryLimits {

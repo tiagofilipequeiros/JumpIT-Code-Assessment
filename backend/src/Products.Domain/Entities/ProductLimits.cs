@@ -15,6 +15,9 @@ public static class ProductLimits
     public const int QuantityMin = 1;
     public const int QuantityMax = 100_000;
 
+    // At or below this (and above 0) a product counts as low stock.
+    public const int LowStockThreshold = 5;
+
     // 6-digit product IDs.
     public const int IdMin = 100000;
     public const int IdMax = 999999;

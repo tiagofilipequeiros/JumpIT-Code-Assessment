@@ -15,6 +15,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, filter, switchMap } from 'rxjs';
 import { FeedbackMessage } from '../../core/enums/feedback-message';
 import { ProductLimits } from '../../core/enums/limits';
@@ -67,9 +68,11 @@ export class ProductsPage {
   private readonly notifications = inject(NotificationService);
   private readonly dialog = inject(MatDialog);
   private readonly session = inject(SessionStore);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly FilterMode = FilterMode;
-  protected readonly lowStock = ProductLimits.LowStock;
+  protected readonly lowStock = ProductLimits.LowStockThreshold;
   protected readonly uncategorizedId = UNCATEGORIZED_ID;
 
   protected readonly loading = signal(false);
@@ -105,6 +108,7 @@ export class ProductsPage {
   private readonly paginator = viewChild.required(MatPaginator);
 
   constructor() {
+    this.restoreFiltersFromUrl();
     this.dataSource.sortingDataAccessor = (product, column) =>
       column === 'category' ? product.categoryName.toLowerCase() : (product as any)[column];
 
@@ -135,6 +139,7 @@ export class ProductsPage {
   protected load(): void {
     const { mode, name, min, max } = this.filters.getRawValue();
     const includeHidden = this.includeHidden();
+    this.saveFiltersToUrl();
 
     let request$: Observable<Product[]>;
     if (mode === FilterMode.Name && name.trim()) {
@@ -222,6 +227,27 @@ export class ProductsPage {
         },
         error: (error) => this.notifications.error(error),
       });
+  }
+
+  // Filters live in the URL (?mode=name&name=lens), so a refresh or a shared link shows the same list.
+  private restoreFiltersFromUrl(): void {
+    const params = this.route.snapshot.queryParamMap;
+    const mode = Object.values(FilterMode).find((m) => m === params.get('mode')) ?? FilterMode.All;
+    const number = (key: string) => (params.has(key) && params.get(key) !== '' ? Number(params.get(key)) : null);
+    this.filters.setValue({ mode, name: params.get('name') ?? '', min: number('min'), max: number('max') });
+    this.includeHidden.set(params.get('hidden') === 'true');
+  }
+
+  private saveFiltersToUrl(): void {
+    const { mode, name, min, max } = this.filters.getRawValue();
+    const queryParams = {
+      mode: mode === FilterMode.All ? null : mode,
+      name: mode === FilterMode.Name && name.trim() ? name.trim() : null,
+      min: mode === FilterMode.StockLevel ? min : null,
+      max: mode === FilterMode.StockLevel ? max : null,
+      hidden: this.includeHidden() ? true : null,
+    };
+    void this.router.navigate([], { queryParams, replaceUrl: true });
   }
 
   // Categories for the product form (active ones; editors also get the hidden ones).

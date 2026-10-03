@@ -478,6 +478,9 @@ namespace Products.Infrastructure.Persistence.Migrations
                     b.Property<int?>("EntityId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("Quantity")
+                        .HasColumnType("int");
+
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 

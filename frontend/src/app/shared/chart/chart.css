@@ -1,0 +1,89 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.chart-card {
+  height: 100%;
+  background: var(--mat-sys-surface);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.chart-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 16px 12px 4px 20px;
+}
+
+.chart-title {
+  margin: 0;
+  font: var(--mat-sys-title-small);
+  color: var(--mat-sys-on-surface);
+}
+
+.chart-subtitle {
+  margin: 2px 0 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+/* Reserves the progress bar's height so nothing jumps when it appears. */
+.loading-bar {
+  height: 4px;
+}
+
+.chart-body {
+  padding: 4px 12px 12px;
+  transition: opacity 150ms ease;
+}
+
+.chart-body.reloading {
+  opacity: 0.5;
+}
+
+.chart-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-medium);
+}
+
+.chart-table {
+  overflow: auto;
+  padding: 0 8px;
+}
+
+.chart-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font: var(--mat-sys-body-small);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-table th,
+.chart-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.chart-table th[scope='row'],
+.chart-table thead th:first-child {
+  text-align: left;
+}
+
+.chart-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface-variant);
+  font-weight: 500;
+}

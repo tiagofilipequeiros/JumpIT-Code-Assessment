@@ -27,7 +27,7 @@ import { integer } from '../../core/utils/validators';
       </p>
       <mat-form-field class="w-100">
         <mat-label>Quantity</mat-label>
-        <input matInput type="number" [formControl]="quantity" min="1" step="1" inputmode="numeric" cdkFocusInitial />
+        <input matInput type="number" [formControl]="quantity" name="quantity" autocomplete="off" min="1" step="1" inputmode="numeric" cdkFocusInitial />
         <mat-error>{{ errorMessage(quantity) }}</mat-error>
       </mat-form-field>
     </mat-dialog-content>

@@ -18,6 +18,8 @@ services:
     build: ./backend
     environment:
       ConnectionStrings__Default: "Server=db,1433;Database=ProductsDb;User Id=sa;Password=Dev_Password123!;TrustServerCertificate=True"
+      # ~90 days of demo activity for the Metrics tab, generated once on the first start.
+      Seeding__DemoActivity: "true"
     ports:
       - "8080:8080"
     depends_on:
@@ -26,8 +28,10 @@ services:
 
   frontend:
     build: ./frontend
+    environment:
+      API_URL: "http://backend:8080"
     ports:
-      - "4200:4200"
+      - "4200:80"
     depends_on:
       - backend
 

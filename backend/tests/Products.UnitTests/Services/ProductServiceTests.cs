@@ -27,7 +27,7 @@ public class ProductServiceTests
             Substitute.For<IUserRepository>(),
             _unitOfWork,
             TestData.CurrentUser(role),
-            new MetricsService(_metrics, _clock),
+            new UserMetricService(_metrics, _clock),
             _clock);
     }
 

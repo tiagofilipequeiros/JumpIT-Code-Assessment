@@ -16,7 +16,7 @@ export const routes: Routes = [
   {
     path: 'metrics',
     title: 'Metrics',
-    canActivate: [permissionGuard(Permission.ViewMetrics)],
+    canActivate: [permissionGuard(Permission.ViewProductMetrics)],
     loadComponent: () => import('./features/metrics/metrics-page').then((m) => m.MetricsPage),
   },
   { path: '**', redirectTo: '' },

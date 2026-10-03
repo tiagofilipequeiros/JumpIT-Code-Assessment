@@ -1,0 +1,27 @@
+server {
+    listen 80;
+    root /usr/share/nginx/html;
+
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+
+    # API calls go to the backend (address from the API_URL environment variable): same origin for the browser, so no CORS.
+    location /api/ {
+        proxy_pass ${API_URL};
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Built files have a content hash in their name, so they can be cached for a long time.
+    location ~* \.(js|css|woff2?|ico|png|svg)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Angular routes (e.g. /categories) are handled in the browser: always serve index.html, never cached.
+    location / {
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control "no-cache";
+    }
+}

@@ -10,7 +10,8 @@ using Products.Infrastructure.Persistence;
 namespace Products.TestSupport;
 
 // Starts the real API against the given database (migrations + seed data are applied on startup).
-public class ApiFactory(string connectionString) : WebApplicationFactory<Program>
+// Extra settings override appsettings.json, e.g. { ["Seeding:DemoActivity"] = "true" }.
+public class ApiFactory(string connectionString, IReadOnlyDictionary<string, string>? settings = null) : WebApplicationFactory<Program>
 {
     public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
     {
@@ -20,6 +21,10 @@ public class ApiFactory(string connectionString) : WebApplicationFactory<Program
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseSetting("ConnectionStrings:Default", connectionString);
+        foreach (var (key, value) in settings ?? new Dictionary<string, string>())
+        {
+            builder.UseSetting(key, value);
+        }
     }
 
     public HttpClient ClientFor(int? userId)

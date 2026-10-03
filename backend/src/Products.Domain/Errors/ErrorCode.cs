@@ -21,4 +21,5 @@ public enum ErrorCode
     InvalidCategory,
     CategoryNameTaken,
     CategoryProtected,
+    InvalidTimeRange,
 }

@@ -22,7 +22,7 @@ interface NavLink {
 const LINKS: NavLink[] = [
   { path: '/', label: 'Products', icon: 'inventory_2' },
   { path: '/categories', label: 'Categories', icon: 'category' },
-  { path: '/metrics', label: 'Metrics', icon: 'monitoring', permission: Permission.ViewMetrics },
+  { path: '/metrics', label: 'Metrics', icon: 'monitoring', permission: Permission.ViewProductMetrics },
 ];
 
 @Component({
@@ -58,7 +58,7 @@ export class Header {
     }
 
     this.usersService.login(user.email).subscribe({
-      next: (signedIn) => this.notifications.success(FeedbackMessage.LoggedIn, `${signedIn.name} (${signedIn.role}).`),
+      next: (signedIn) => this.notifications.success(FeedbackMessage.SignedIn, `${signedIn.name} (${signedIn.role}).`),
       error: (error) => this.notifications.error(error),
     });
   }

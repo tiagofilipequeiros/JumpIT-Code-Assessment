@@ -12,5 +12,5 @@ export enum FeedbackMessage {
   CategoryDeleted = 'Category deleted.',
   CategoryEnabled = 'Category enabled.',
   CategoryDisabled = 'Category disabled.',
-  LoggedIn = 'Signed in as',
+  SignedIn = 'Signed in as',
 }

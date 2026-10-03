@@ -32,6 +32,18 @@ public class UserMetric
     public MetricEntity Entity { get; set; }
     public MetricAction Action { get; set; }
     public int? EntityId { get; set; }
+
+    // Units added or removed, for AddStock / DecrementStock (always positive; the action gives the direction).
+    public int? Quantity { get; set; }
     public string? Details { get; set; }
     public DateTime CreatedAt { get; set; }
+}
+
+// How actions are grouped in the metrics.
+public static class MetricActionGroups
+{
+    public static readonly MetricAction[] Edits =
+        [MetricAction.Create, MetricAction.Update, MetricAction.Delete, MetricAction.Enable, MetricAction.Disable];
+
+    public static readonly MetricAction[] StockChanges = [MetricAction.AddStock, MetricAction.DecrementStock];
 }

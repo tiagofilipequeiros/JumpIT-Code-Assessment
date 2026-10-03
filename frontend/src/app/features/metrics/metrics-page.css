@@ -1,0 +1,32 @@
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.filters mat-button-toggle-group {
+  flex-shrink: 0;
+}
+
+.product-picker {
+  width: 340px;
+  max-width: 100%;
+}
+
+mat-button-toggle mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  vertical-align: text-bottom;
+  margin-right: 4px;
+}
+
+@media (max-width: 575.98px) {
+  .filters mat-button-toggle-group {
+    width: 100%;
+  }
+  .filters mat-button-toggle {
+    flex: 1;
+  }
+}

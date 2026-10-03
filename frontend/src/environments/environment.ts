@@ -1,3 +1,4 @@
 export const environment = {
-  apiUrl: 'http://localhost:8080/api',
+  // Same origin: nginx (Docker) or the dev server proxy (npm start) forwards /api to the backend.
+  apiUrl: '/api',
 };

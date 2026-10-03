@@ -1,0 +1,66 @@
+<section class="chart-card" [attr.aria-busy]="loading()">
+  <header class="chart-header">
+    <div>
+      <h2 class="chart-title">{{ title() }}</h2>
+      @if (subtitle()) {
+        <p class="chart-subtitle">{{ subtitle() }}</p>
+      }
+    </div>
+    @if (config() && !isEmpty()) {
+      <button
+        mat-icon-button
+        (click)="toggleTable()"
+        [matTooltip]="showTable() ? 'Show chart' : 'Show as table'"
+        [attr.aria-label]="showTable() ? 'Show chart' : 'Show as table'"
+        [attr.aria-pressed]="showTable()"
+      >
+        <mat-icon>{{ showTable() ? 'monitoring' : 'table_rows' }}</mat-icon>
+      </button>
+    }
+  </header>
+
+  <div class="loading-bar">
+    @if (loading()) {
+      <mat-progress-bar mode="indeterminate" />
+    }
+  </div>
+
+  <!-- While reloading, the previous chart stays visible (dimmed) instead of flashing a placeholder. -->
+  <div class="chart-body" [class.reloading]="loading() && config()" [style.min-height.px]="height()">
+    @if (!config()) {
+      <div class="chart-message" [style.height.px]="height()">Loading…</div>
+    } @else if (isEmpty()) {
+      <div class="chart-message" [style.height.px]="height()">
+        <mat-icon>bar_chart_off</mat-icon>
+        <span>{{ emptyMessage() }}</span>
+      </div>
+    } @else if (showTable() && table(); as table) {
+      <div class="chart-table" [style.max-height.px]="height()">
+        <table>
+          <thead>
+            <tr>
+              @for (header of table.headers; track $index) {
+                <th scope="col">{{ header }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of table.rows; track $index) {
+              <tr>
+                @for (cell of row; track $index) {
+                  @if ($first) {
+                    <th scope="row">{{ cell }}</th>
+                  } @else {
+                    <td>{{ cell }}</td>
+                  }
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <div #plot class="chart-plot" role="img" [attr.aria-label]="title()"></div>
+    }
+  </div>
+</section>

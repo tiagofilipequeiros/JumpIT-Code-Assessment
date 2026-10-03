@@ -24,6 +24,7 @@ public static class ErrorCodeMappings
         [ErrorCode.InvalidCategory] = (StatusCodes.Status400BadRequest, "The selected category cannot be used."),
         [ErrorCode.CategoryNameTaken] = (StatusCodes.Status409Conflict, "A category with this name already exists."),
         [ErrorCode.CategoryProtected] = (StatusCodes.Status409Conflict, "The Uncategorized category cannot be changed."),
+        [ErrorCode.InvalidTimeRange] = (StatusCodes.Status400BadRequest, "The requested time range is not allowed."),
     };
 
     public static int Status(this ErrorCode code) => Definitions[code].Status;

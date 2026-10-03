@@ -23,7 +23,7 @@ import { errorMessage } from '../../core/utils/form-errors';
       <mat-dialog-content>
         <mat-form-field class="w-100">
           <mat-label>Name</mat-label>
-          <input matInput [formControl]="name" [maxlength]="limits.NameMaxLength" cdkFocusInitial />
+          <input matInput [formControl]="name" name="name" autocomplete="off" [maxlength]="limits.NameMaxLength" cdkFocusInitial />
           <mat-hint align="end">{{ name.value.length }} / {{ limits.NameMaxLength }}</mat-hint>
           <mat-error>{{ errorMessage(name) }}</mat-error>
         </mat-form-field>

@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { Permission, Role } from '../../core/enums/permission';
 import { Product } from '../../core/models/product';
@@ -34,7 +35,7 @@ const user = (role: Role, permissions: Permission[]): User => ({
 async function render(signedIn: User) {
   TestBed.configureTestingModule({
     imports: [ProductsPage],
-    providers: [provideHttpClient(), provideHttpClientTesting()],
+    providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
   });
   TestBed.inject(SessionStore).setUser(signedIn);
 

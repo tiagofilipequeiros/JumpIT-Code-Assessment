@@ -9,15 +9,6 @@ using Products.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Allow the Angular app to call this API.
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(policy =>
-        policy.WithOrigins("http://localhost:4200")
-              .AllowAnyHeader()
-              .AllowAnyMethod());
-});
-
 // Errors: every error response is ProblemDetails with a "code" field.
 builder.Services.AddProblemDetails(options =>
     options.CustomizeProblemDetails = context =>
@@ -56,11 +47,13 @@ builder.Services.AddSwaggerGen(options =>
 var app = builder.Build();
 
 await app.Services.MigrateDatabaseAsync();
+if (app.Configuration.GetValue<bool>("Seeding:DemoActivity"))
+{
+    await app.Services.SeedDemoActivityAsync();
+}
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
-
-app.UseCors();
 
 app.UseSwagger();
 app.UseSwaggerUI(options =>

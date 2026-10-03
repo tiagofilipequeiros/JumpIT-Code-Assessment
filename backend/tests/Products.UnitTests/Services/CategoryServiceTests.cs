@@ -21,7 +21,7 @@ public class CategoryServiceTests
     {
         _categories.GetAsync(Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
             .Returns(new CategorySummary(TestData.Objectives, 0));
-        return new CategoryService(_categories, _products, _unitOfWork, TestData.CurrentUser(role), new MetricsService(_metrics, _clock), _clock);
+        return new CategoryService(_categories, _products, _unitOfWork, TestData.CurrentUser(role), new UserMetricService(_metrics, _clock), _clock);
     }
 
     [Fact]

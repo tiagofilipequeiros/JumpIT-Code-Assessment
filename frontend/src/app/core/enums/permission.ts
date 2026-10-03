@@ -5,7 +5,9 @@ export enum Permission {
   ToggleActive = 'ToggleActive',
   ViewHidden = 'ViewHidden',
   Delete = 'Delete',
-  ViewMetrics = 'ViewMetrics',
+  ViewProductMetrics = 'ViewProductMetrics',
+  // Per-user activity is personal data: admins only.
+  ViewUserMetrics = 'ViewUserMetrics',
 }
 
 export enum Role {

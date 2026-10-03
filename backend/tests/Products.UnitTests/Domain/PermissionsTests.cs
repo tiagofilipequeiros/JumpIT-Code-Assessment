@@ -11,13 +11,15 @@ public class PermissionsTests
     [InlineData(Role.User, Permission.ToggleActive, false)]
     [InlineData(Role.User, Permission.ViewHidden, false)]
     [InlineData(Role.User, Permission.Delete, false)]
-    [InlineData(Role.User, Permission.ViewMetrics, false)]
+    [InlineData(Role.User, Permission.ViewProductMetrics, false)]
+    [InlineData(Role.User, Permission.ViewUserMetrics, false)]
     [InlineData(Role.Editor, Permission.ChangeStock, true)]
     [InlineData(Role.Editor, Permission.Edit, true)]
     [InlineData(Role.Editor, Permission.ToggleActive, true)]
     [InlineData(Role.Editor, Permission.ViewHidden, true)]
     [InlineData(Role.Editor, Permission.Delete, false)]
-    [InlineData(Role.Editor, Permission.ViewMetrics, false)]
+    [InlineData(Role.Editor, Permission.ViewProductMetrics, true)]
+    [InlineData(Role.Editor, Permission.ViewUserMetrics, false)]
     public void Roles_have_the_agreed_permissions(Role role, Permission permission, bool expected)
     {
         Assert.Equal(expected, role.Has(permission));

@@ -9,7 +9,9 @@ public enum Permission
     ToggleActive,
     ViewHidden,
     Delete,
-    ViewMetrics,
+    ViewProductMetrics,
+    // Per-user activity is personal data: admins only.
+    ViewUserMetrics,
 }
 
 // The single place that says which role can do what.
@@ -18,7 +20,7 @@ public static class Permissions
     private static readonly Dictionary<Role, HashSet<Permission>> ByRole = new()
     {
         [Role.User] = [Permission.ChangeStock],
-        [Role.Editor] = [Permission.ChangeStock, Permission.Edit, Permission.ToggleActive, Permission.ViewHidden],
+        [Role.Editor] = [Permission.ChangeStock, Permission.Edit, Permission.ToggleActive, Permission.ViewHidden, Permission.ViewProductMetrics],
         [Role.Admin] = [.. Enum.GetValues<Permission>()],
     };
 

@@ -11,7 +11,7 @@ public class CategoryService(
     IProductRepository products,
     IUnitOfWork unitOfWork,
     CurrentUser currentUser,
-    MetricsService metrics,
+    UserMetricService metrics,
     TimeProvider clock)
 {
     public async Task<List<CategoryResponse>> GetAllAsync(bool includeHidden, CancellationToken cancellationToken)

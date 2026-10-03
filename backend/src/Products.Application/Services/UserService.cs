@@ -5,7 +5,7 @@ using Products.Domain.Errors;
 
 namespace Products.Application.Services;
 
-public class UserService(IUserRepository users, IUnitOfWork unitOfWork, MetricsService metrics)
+public class UserService(IUserRepository users, IUnitOfWork unitOfWork, UserMetricService metrics)
 {
     public async Task<List<UserResponse>> GetAllAsync(CancellationToken cancellationToken) =>
         (await users.ListAsync(cancellationToken)).Select(UserResponse.From).ToList();
