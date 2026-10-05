@@ -1,6 +1,6 @@
 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
   <h1 class="page-title mb-0 me-auto">Products</h1>
-  <button mat-icon-button (click)="load()" [disabled]="loading()" matTooltip="Refresh" aria-label="Refresh">
+  <button mat-icon-button (click)="reload()" [disabled]="loading()" matTooltip="Refresh" aria-label="Refresh">
     <mat-icon>refresh</mat-icon>
   </button>
   @if (canEdit()) {
@@ -11,52 +11,14 @@
   }
 </div>
 
-<form [formGroup]="filters" (ngSubmit)="load()" class="filters mb-3">
-  <div class="row g-2 align-items-center">
-    <div class="col-12 col-lg-auto">
-      <mat-button-toggle-group formControlName="mode" aria-label="Filter mode" (change)="load()" class="w-100">
-        <mat-button-toggle [value]="FilterMode.All" class="flex-fill">All</mat-button-toggle>
-        <mat-button-toggle [value]="FilterMode.Name" class="flex-fill">Name</mat-button-toggle>
-        <mat-button-toggle [value]="FilterMode.StockLevel" class="flex-fill">Stock level</mat-button-toggle>
-      </mat-button-toggle-group>
-    </div>
-
-    @switch (filters.controls.mode.value) {
-      @case (FilterMode.Name) {
-        <mat-form-field class="col-12 col-sm" subscriptSizing="dynamic">
-          <mat-label>Search by name</mat-label>
-          <mat-icon matPrefix>search</mat-icon>
-          <input matInput formControlName="name" name="search" autocomplete="off" placeholder="e.g. objective…" />
-        </mat-form-field>
-      }
-      @case (FilterMode.StockLevel) {
-        <mat-form-field class="col-6 col-sm-3 col-lg-2" subscriptSizing="dynamic">
-          <mat-label>Min stock</mat-label>
-          <input matInput type="number" formControlName="min" name="minStock" autocomplete="off" inputmode="numeric" min="0" />
-        </mat-form-field>
-        <mat-form-field class="col-6 col-sm-3 col-lg-2" subscriptSizing="dynamic">
-          <mat-label>Max stock</mat-label>
-          <input matInput type="number" formControlName="max" name="maxStock" autocomplete="off" inputmode="numeric" min="0" />
-        </mat-form-field>
-      }
-    }
-
-    @if (filters.controls.mode.value !== FilterMode.All) {
-      <div class="col-12 col-sm-auto d-flex gap-2">
-        <button mat-stroked-button type="submit">Apply</button>
-        <button mat-button type="button" (click)="clearFilters()">Clear</button>
-      </div>
-    }
-
-    @if (canViewHidden()) {
-      <div class="col-12 col-lg-auto ms-lg-auto">
-        <mat-slide-toggle [checked]="includeHidden()" (change)="setIncludeHidden($event.checked)">
-          Show hidden
-        </mat-slide-toggle>
-      </div>
-    }
-  </div>
-</form>
+<app-product-filters
+  class="d-block mb-3"
+  [filters]="filters()"
+  [categories]="categories()"
+  [canFilterStatus]="canViewHidden()"
+  [resultCount]="resultCount()"
+  (filtersChange)="applyFilters($event)"
+/>
 
 <div class="table-card">
   @if (loading()) {
@@ -96,7 +58,12 @@
       <ng-container matColumnDef="stock">
         <th mat-header-cell *matHeaderCellDef mat-sort-header arrowPosition="before" class="text-end">Stock</th>
         <td mat-cell *matCellDef="let p" class="text-end">
-          <span class="stock" [class.stock-out]="p.stock === 0" [class.stock-low]="p.stock > 0 && p.stock <= lowStock">
+          <span
+            class="stock"
+            [class.stock-out]="p.stockStatus === StockStatus.OutOfStock"
+            [class.stock-low]="p.stockStatus === StockStatus.LowStock"
+            [attr.title]="stockLabel(p)"
+          >
             {{ p.stock }}
           </span>
         </td>
@@ -105,13 +72,14 @@
       <ng-container matColumnDef="status">
         <th mat-header-cell *matHeaderCellDef class="d-none d-sm-table-cell">Status</th>
         <td mat-cell *matCellDef="let p" class="d-none d-sm-table-cell">
-          @if (!p.isActive) {
-            <span class="badge-status badge-disabled">Disabled</span>
-          } @else if (p.categoryId === uncategorizedId) {
-            <span class="badge-status badge-warning">Uncategorized</span>
-          } @else {
-            <span class="badge-status badge-active">Active</span>
-          }
+          <span
+            class="badge-status"
+            [class.badge-active]="p.status === ProductStatus.Active"
+            [class.badge-disabled]="p.status === ProductStatus.Disabled"
+            [class.badge-warning]="p.status === ProductStatus.Uncategorized || p.status === ProductStatus.CategoryDisabled"
+          >
+            {{ statusLabel(p) }}
+          </span>
         </td>
       </ng-container>
 
@@ -147,10 +115,10 @@
       </ng-container>
 
       <tr mat-header-row *matHeaderRowDef="columns()"></tr>
-      <tr mat-row *matRowDef="let row; columns: columns()" [class.row-hidden]="!row.isActive"></tr>
+      <tr mat-row *matRowDef="let row; columns: columns()" [class.row-hidden]="row.status !== ProductStatus.Active"></tr>
       <tr class="mat-row" *matNoDataRow>
         <td class="mat-cell p-4 text-center text-muted" [attr.colspan]="columns().length">
-          {{ loading() ? 'Loading…' : 'No products match the current filter.' }}
+          {{ loading() ? 'Loading…' : 'No products match these filters. Remove a filter or clear all.' }}
         </td>
       </tr>
     </table>

@@ -52,7 +52,7 @@ There is no login page and no password (see [Users and roles](#users-and-roles))
 
 ## Review in 5 minutes
 
-1. Open http://localhost:4200 as **Alex Admin**. Turn on **Show hidden**: disabled and uncategorized products appear.
+1. Open http://localhost:4200 as **Alex Admin**. Type `obj` in the search, then add **Stock status: Low stock**: the filters combine (AND) and stay in the URL. Filter **Status: Disabled** to see a hidden product.
 2. Open a product's menu → **History**: every price and stock change, from the SQL Server temporal table.
 3. Use the stock button on a product with little stock and remove more than is left: the API refuses (`409 InsufficientStock`) and nothing changes.
 4. Switch to **Sam User**: no create, edit, delete or Metrics; the hidden products are gone.
@@ -75,7 +75,7 @@ There is no login page and no password (see [Users and roles](#users-and-roles))
 | Unit tests | 3 backend test projects + Vitest; see [Tests](#tests) |
 | Documentation | This file |
 | Optional: BDD | Reqnroll scenarios in `backend/tests/Products.AcceptanceTests/Features` |
-| Optional: UX, validation, filtering, UI framework | Angular Material + Bootstrap, responsive, filters, inline validation, confirmations |
+| Optional: UX, validation, filtering, UI framework | Angular Material + Bootstrap, responsive; search while typing plus category, status, stock status, stock and price filters (all combined); inline validation, confirmations |
 
 ## Architecture
 
@@ -138,7 +138,7 @@ Dependencies point inwards. The Application layer does not know EF Core: it talk
 ## Where this differs from common practice
 
 - **No authentication**, and the `X-User-Id` header can be faked on purpose (see above). Reads work anonymously, as a normal user.
-- **`includeHidden=true` is silently ignored** for users who may not see hidden items (instead of a 403), so one UI works for every role.
+- **Hidden statuses are silently ignored** for users who may not see them (normal users always get active products, instead of a 403), so one UI works for every role.
 - **IDs 100000-100099 are reserved** for seed data; new products start at 100100. Seed data needs fixed IDs, and a fixed start keeps the sequence stable if seeds are added later.
 - **Demo activity writes product history directly** (system versioning is switched off briefly, inside one transaction). Only the seeder does this, only once, and it is off by default.
 - **Buttons use sentence case** ("New product"), following Angular Material rather than Title Case.
@@ -186,7 +186,7 @@ All responses are JSON; enums are strings. Errors are always [ProblemDetails](ht
 
 | Method | Endpoint | Who |
 |---|---|---|
-| GET | `/api/products` | everyone |
+| GET | `/api/products` (optional filters, see below) | everyone |
 | GET | `/api/products/{id}` | everyone |
 | POST | `/api/products` | Editor, Admin |
 | PUT | `/api/products/{id}` | Editor, Admin |
@@ -203,7 +203,20 @@ All responses are JSON; enums are strings. Errors are always [ProblemDetails](ht
 | GET | `/api/metrics/users?days=30` | Admin |
 | GET | `/api/users`, POST `/api/auth/login` | everyone |
 
-The first 9 rows are the endpoints from the assessment. List endpoints accept `includeHidden=true` (Editors and Admins).
+The first 9 rows are the endpoints from the assessment.
+
+**Filtering `GET /api/products`:** every parameter is optional; different parameters combine with AND, repeated values of one parameter with OR. The UI uses this endpoint; `/search` and `/stock-level` stay as the assessment defines them and use the same filter internally.
+
+| Parameter | Example | Notes |
+|---|---|---|
+| `search` | `search=lens` | part of the name, case-insensitive |
+| `categoryIds` | `categoryIds=2&categoryIds=5` | |
+| `statuses` | `statuses=Disabled` | `Active`, `Disabled`, `Uncategorized`, `CategoryDisabled`; non-active ones only for Editors and Admins |
+| `stockStatuses` | `stockStatuses=LowStock` | `InStock`, `LowStock` (1-5), `OutOfStock` |
+| `minStock`, `maxStock` | `minStock=10` | inclusive |
+| `minPrice`, `maxPrice` | `maxPrice=300` | inclusive |
+
+Every product response includes `status` and `stockStatus`, computed by the API, so badges and filters always agree.
 
 ## Running parts separately
 

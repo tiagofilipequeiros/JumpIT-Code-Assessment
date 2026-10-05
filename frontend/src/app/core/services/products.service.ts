@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Product, ProductRequest, ProductVersion, UpdateProductRequest } from '../models/product';
+import { Product, ProductFilters, ProductRequest, ProductVersion, UpdateProductRequest } from '../models/product';
 
 const url = `${environment.apiUrl}/products`;
 
@@ -10,23 +10,28 @@ const url = `${environment.apiUrl}/products`;
 export class ProductsService {
   private readonly http = inject(HttpClient);
 
-  getAll(includeHidden: boolean): Observable<Product[]> {
-    return this.http.get<Product[]>(url, { params: { includeHidden } });
-  }
-
-  search(name: string, includeHidden: boolean): Observable<Product[]> {
-    return this.http.get<Product[]>(`${url}/search`, { params: { name, includeHidden } });
-  }
-
-  getByStockLevel(min: number | null, max: number | null, includeHidden: boolean): Observable<Product[]> {
-    let params = new HttpParams().set('includeHidden', includeHidden);
-    if (min !== null) {
-      params = params.set('min', min);
+  // All filters in one request; the API combines them with AND.
+  getAll(filters: Partial<ProductFilters> = {}): Observable<Product[]> {
+    let params = new HttpParams();
+    if (filters.search?.trim()) {
+      params = params.set('search', filters.search.trim());
     }
-    if (max !== null) {
-      params = params.set('max', max);
+    for (const id of filters.categoryIds ?? []) {
+      params = params.append('categoryIds', id);
     }
-    return this.http.get<Product[]>(`${url}/stock-level`, { params });
+    for (const status of filters.statuses ?? []) {
+      params = params.append('statuses', status);
+    }
+    for (const status of filters.stockStatuses ?? []) {
+      params = params.append('stockStatuses', status);
+    }
+    for (const key of ['minStock', 'maxStock', 'minPrice', 'maxPrice'] as const) {
+      const value = filters[key];
+      if (value !== null && value !== undefined) {
+        params = params.set(key, value);
+      }
+    }
+    return this.http.get<Product[]>(url, { params });
   }
 
   getHistory(id: number): Observable<ProductVersion[]> {

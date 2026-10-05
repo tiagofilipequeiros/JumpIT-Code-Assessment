@@ -9,21 +9,39 @@ public class ProductRepository(AppDbContext db) : IProductRepository
 {
     public async Task<List<Product>> ListAsync(ProductFilter filter, CancellationToken cancellationToken)
     {
-        var query = Visible(filter.IncludeHidden);
+        var query = db.Products.AsQueryable()
+            .WithStatus(filter.Statuses)
+            .WithStockStatus(filter.StockStatuses);
+
         if (filter.NameContains is { } name)
         {
             // Translated to LIKE '%name%' (wildcards in the input are escaped).
             query = query.Where(p => p.Name.Contains(name));
         }
 
-        if (filter.MinStock is { } min)
+        if (filter.CategoryIds.Count > 0)
         {
-            query = query.Where(p => p.Stock >= min);
+            query = query.Where(p => filter.CategoryIds.Contains(p.CategoryId));
         }
 
-        if (filter.MaxStock is { } max)
+        if (filter.MinStock is { } minStock)
         {
-            query = query.Where(p => p.Stock <= max);
+            query = query.Where(p => p.Stock >= minStock);
+        }
+
+        if (filter.MaxStock is { } maxStock)
+        {
+            query = query.Where(p => p.Stock <= maxStock);
+        }
+
+        if (filter.MinPrice is { } minPrice)
+        {
+            query = query.Where(p => p.Price >= minPrice);
+        }
+
+        if (filter.MaxPrice is { } maxPrice)
+        {
+            query = query.Where(p => p.Price <= maxPrice);
         }
 
         return await WithDetails(query).OrderBy(p => p.Id).ToListAsync(cancellationToken);

@@ -40,7 +40,7 @@ public sealed class DemoActivitySeedingTests(SqlServerFixture sqlServer) : IAsyn
     public async Task Seeded_stock_history_is_never_negative_and_ends_at_the_current_stock()
     {
         var admin = StartApi().ClientFor(TestUsers.Admin);
-        var current = await (await admin.GetAsync("/api/products?includeHidden=true")).ReadAsync<List<ProductResponse>>();
+        var current = await (await admin.GetAsync("/api/products")).ReadAsync<List<ProductResponse>>();
 
         var history = await (await admin.GetAsync(
                 "/api/metrics/products/stock-history?days=90&productIds=100000&productIds=100004&productIds=100005"))

@@ -4,8 +4,10 @@ namespace Products.Application.Abstractions;
 
 public interface IProductRepository
 {
-    // Read-only queries (not tracked). IncludeHidden = false applies the visibility rule for normal users.
+    // Read-only queries (not tracked). Every filter that is set must match (AND).
     Task<List<Product>> ListAsync(ProductFilter filter, CancellationToken cancellationToken);
+
+    // includeHidden = false applies the visibility rule for normal users.
     Task<Product?> GetAsync(int id, bool includeHidden, CancellationToken cancellationToken);
     Task<bool> ExistsAsync(int id, bool includeHidden, CancellationToken cancellationToken);
     Task<List<ProductVersion>> GetHistoryAsync(int id, CancellationToken cancellationToken);
@@ -22,7 +24,18 @@ public interface IProductRepository
     Task<int> MoveToCategoryAsync(int fromCategoryId, int toCategoryId, int userId, DateTime now, CancellationToken cancellationToken);
 }
 
-public record ProductFilter(bool IncludeHidden, string? NameContains = null, int? MinStock = null, int? MaxStock = null);
+// Empty lists and nulls mean "don't filter on this". Within a list any value may match (OR); across filters all must (AND).
+public record ProductFilter
+{
+    public string? NameContains { get; init; }
+    public IReadOnlyCollection<int> CategoryIds { get; init; } = [];
+    public IReadOnlyCollection<ProductStatus> Statuses { get; init; } = [];
+    public IReadOnlyCollection<StockStatus> StockStatuses { get; init; } = [];
+    public int? MinStock { get; init; }
+    public int? MaxStock { get; init; }
+    public decimal? MinPrice { get; init; }
+    public decimal? MaxPrice { get; init; }
+}
 
 // One version of a product from the temporal history table.
 public record ProductVersion(

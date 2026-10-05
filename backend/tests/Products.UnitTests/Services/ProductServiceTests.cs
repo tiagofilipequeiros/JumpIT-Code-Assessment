@@ -153,9 +153,10 @@ public class ProductServiceTests
     {
         _products.ListAsync(Arg.Any<ProductFilter>(), Arg.Any<CancellationToken>()).Returns([]);
 
-        await Service(Role.User).GetAllAsync(includeHidden: true, default);
+        await Service(Role.User).GetAllAsync(new ProductQuery { Statuses = [ProductStatus.Disabled] }, default);
 
-        await _products.Received(1).ListAsync(Arg.Is<ProductFilter>(f => !f.IncludeHidden), Arg.Any<CancellationToken>());
+        await _products.Received(1).ListAsync(
+            Arg.Is<ProductFilter>(f => f.Statuses.SequenceEqual(new[] { ProductStatus.Active })), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -163,9 +164,10 @@ public class ProductServiceTests
     {
         _products.ListAsync(Arg.Any<ProductFilter>(), Arg.Any<CancellationToken>()).Returns([]);
 
-        await Service(Role.Editor).GetAllAsync(includeHidden: true, default);
+        await Service(Role.Editor).GetAllAsync(new ProductQuery { Statuses = [ProductStatus.Disabled] }, default);
 
-        await _products.Received(1).ListAsync(Arg.Is<ProductFilter>(f => f.IncludeHidden), Arg.Any<CancellationToken>());
+        await _products.Received(1).ListAsync(
+            Arg.Is<ProductFilter>(f => f.Statuses.SequenceEqual(new[] { ProductStatus.Disabled })), Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -173,7 +175,7 @@ public class ProductServiceTests
     [InlineData("   ")]
     public async Task Search_without_a_name_is_a_validation_error(string? name)
     {
-        var error = await Assert.ThrowsAsync<AppException>(() => Service(role: null).SearchAsync(name, false, default));
+        var error = await Assert.ThrowsAsync<AppException>(() => Service(role: null).SearchAsync(name, default));
 
         Assert.Equal(ErrorCode.ValidationFailed, error.Code);
     }
@@ -183,9 +185,42 @@ public class ProductServiceTests
     {
         _products.ListAsync(Arg.Any<ProductFilter>(), Arg.Any<CancellationToken>()).Returns([]);
 
-        await Service(role: null).SearchAsync("  lens ", false, default);
+        await Service(role: null).SearchAsync("  lens ", default);
 
         await _products.Received(1).ListAsync(Arg.Is<ProductFilter>(f => f.NameContains == "lens"), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Filters_are_passed_on_together()
+    {
+        _products.ListAsync(Arg.Any<ProductFilter>(), Arg.Any<CancellationToken>()).Returns([]);
+        var query = new ProductQuery
+        {
+            Search = " lens ",
+            CategoryIds = [2, 3, 2],
+            StockStatuses = [StockStatus.LowStock],
+            MinPrice = 10,
+            MaxPrice = 300,
+        };
+
+        await Service(Role.Editor).GetAllAsync(query, default);
+
+        await _products.Received(1).ListAsync(
+            Arg.Is<ProductFilter>(f =>
+                f.NameContains == "lens" &&
+                f.CategoryIds.SequenceEqual(new[] { 2, 3 }) &&
+                f.StockStatuses.SequenceEqual(new[] { StockStatus.LowStock }) &&
+                f.MinPrice == 10 && f.MaxPrice == 300),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Min_price_above_max_price_is_rejected()
+    {
+        var error = await Assert.ThrowsAsync<AppException>(() =>
+            Service(role: null).GetAllAsync(new ProductQuery { MinPrice = 50, MaxPrice = 10 }, default));
+
+        Assert.Equal(ErrorCode.InvalidPriceRange, error.Code);
     }
 
     [Theory]
@@ -194,7 +229,7 @@ public class ProductServiceTests
     [InlineData(null, -1)]
     public async Task Invalid_stock_range_is_rejected(int? min, int? max)
     {
-        var error = await Assert.ThrowsAsync<AppException>(() => Service(role: null).GetByStockLevelAsync(min, max, false, default));
+        var error = await Assert.ThrowsAsync<AppException>(() => Service(role: null).GetByStockLevelAsync(min, max, default));
 
         Assert.Equal(ErrorCode.InvalidStockRange, error.Code);
     }

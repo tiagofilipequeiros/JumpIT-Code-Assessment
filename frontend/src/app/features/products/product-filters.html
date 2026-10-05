@@ -1,0 +1,176 @@
+<section class="filter-card" aria-label="Filter products">
+  <div class="filter-row">
+    <mat-form-field class="search" appearance="outline" subscriptSizing="dynamic">
+      <mat-icon matPrefix>search</mat-icon>
+      <mat-label>Search products</mat-label>
+      <input
+        matInput
+        type="search"
+        name="search"
+        autocomplete="off"
+        spellcheck="false"
+        placeholder="e.g. objective…"
+        [formControl]="search"
+      />
+      @if (search.value) {
+        <button matSuffix mat-icon-button (click)="clearSearch()" aria-label="Clear search">
+          <mat-icon>close</mat-icon>
+        </button>
+      }
+      @if (searchTooShort()) {
+        <mat-hint>Type at least {{ searchMinLength }} characters</mat-hint>
+      }
+    </mat-form-field>
+
+    @if (!compact()) {
+      <ng-container *ngTemplateOutlet="selectFilters" />
+      <button
+        mat-stroked-button
+        class="more-button"
+        (click)="showMore.set(!showMore())"
+        [attr.aria-expanded]="showMore()"
+        aria-controls="more-filters"
+      >
+        <mat-icon>tune</mat-icon>
+        Ranges
+        @if (rangeCount() > 0) {
+          <span class="count">{{ rangeCount() }}</span>
+        }
+      </button>
+    } @else {
+      <button
+        mat-stroked-button
+        class="more-button"
+        (click)="showFilters.set(!showFilters())"
+        [attr.aria-expanded]="showFilters()"
+        aria-controls="compact-filters"
+      >
+        <mat-icon>filter_list</mat-icon>
+        Filters
+        @if (hiddenFilterCount() > 0) {
+          <span class="count">{{ hiddenFilterCount() }}</span>
+        }
+      </button>
+    }
+  </div>
+
+  @if (compact() && showFilters()) {
+    <div id="compact-filters" class="filter-row compact-panel">
+      <ng-container *ngTemplateOutlet="selectFilters" />
+    </div>
+  }
+
+  @if ((compact() && showFilters()) || (!compact() && showMore())) {
+    <div id="more-filters" class="filter-row ranges" [formGroup]="ranges">
+      <fieldset class="range">
+        <legend>Stock</legend>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Min</mat-label>
+          <input matInput type="number" inputmode="numeric" name="minStock" autocomplete="off" min="0" [max]="stockMax" formControlName="minStock" />
+        </mat-form-field>
+        <span class="dash" aria-hidden="true">–</span>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Max</mat-label>
+          <input matInput type="number" inputmode="numeric" name="maxStock" autocomplete="off" min="0" [max]="stockMax" formControlName="maxStock" />
+        </mat-form-field>
+      </fieldset>
+
+      <fieldset class="range">
+        <legend>Price (€)</legend>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Min</mat-label>
+          <input matInput type="number" inputmode="decimal" name="minPrice" autocomplete="off" min="0" step="0.01" [max]="priceMax" formControlName="minPrice" />
+        </mat-form-field>
+        <span class="dash" aria-hidden="true">–</span>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Max</mat-label>
+          <input matInput type="number" inputmode="decimal" name="maxPrice" autocomplete="off" min="0" step="0.01" [max]="priceMax" formControlName="maxPrice" />
+        </mat-form-field>
+      </fieldset>
+
+      <div class="range-errors" aria-live="polite">
+        @if (ranges.hasError('stockRange')) {
+          <span class="error">Minimum stock is higher than maximum stock.</span>
+        }
+        @if (ranges.hasError('priceRange')) {
+          <span class="error">Minimum price is higher than maximum price.</span>
+        }
+        @if (ranges.invalid && !ranges.hasError('stockRange') && !ranges.hasError('priceRange')) {
+          <span class="error">Values cannot be negative.</span>
+        }
+      </div>
+    </div>
+  }
+
+  <div class="summary" aria-live="polite">
+    <span class="results">
+      @if (resultCount() !== null) {
+        {{ resultCount() }} {{ resultCount() === 1 ? 'product' : 'products' }}
+      }
+    </span>
+
+    @if (activeFilters().length > 0) {
+      <mat-chip-set aria-label="Active filters">
+        @for (active of activeFilters(); track active.label) {
+          <mat-chip (removed)="emit(active.remove)">
+            {{ active.label }}
+            <button matChipRemove [attr.aria-label]="'Remove filter ' + active.label">
+              <mat-icon>cancel</mat-icon>
+            </button>
+          </mat-chip>
+        }
+      </mat-chip-set>
+      <button mat-button class="clear" (click)="clearAll()">Clear all</button>
+    }
+  </div>
+</section>
+
+<ng-template #selectFilters>
+    <mat-form-field class="select" appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Category</mat-label>
+      <mat-select multiple [value]="filters().categoryIds" (valueChange)="emit({ categoryIds: $event })">
+        <mat-select-trigger>
+          {{ categoryName(filters().categoryIds[0]) }}
+          @if (filters().categoryIds.length > 1) {
+            <span class="more">+{{ filters().categoryIds.length - 1 }}</span>
+          }
+        </mat-select-trigger>
+        @for (category of categories(); track category.id) {
+          <mat-option [value]="category.id">{{ category.name }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    @if (canFilterStatus()) {
+      <mat-form-field class="select" appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Status</mat-label>
+        <mat-select multiple [value]="filters().statuses" (valueChange)="emit({ statuses: $event })">
+          <mat-select-trigger>
+            {{ statusLabels[filters().statuses[0]] }}
+            @if (filters().statuses.length > 1) {
+              <span class="more">+{{ filters().statuses.length - 1 }}</span>
+            }
+          </mat-select-trigger>
+          @for (status of productStatuses; track status) {
+            <mat-option [value]="status">{{ statusLabels[status] }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    }
+
+    <mat-form-field class="select" appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Stock status</mat-label>
+      <mat-select multiple [value]="filters().stockStatuses" (valueChange)="emit({ stockStatuses: $event })">
+        <mat-select-trigger>
+          {{ stockLabels[filters().stockStatuses[0]] }}
+          @if (filters().stockStatuses.length > 1) {
+            <span class="more">+{{ filters().stockStatuses.length - 1 }}</span>
+          }
+        </mat-select-trigger>
+        @for (status of stockStatuses; track status) {
+          <mat-option [value]="status">{{ stockLabels[status] }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+</ng-template>

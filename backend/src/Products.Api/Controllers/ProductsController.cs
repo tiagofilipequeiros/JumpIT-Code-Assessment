@@ -9,22 +9,26 @@ namespace Products.Api.Controllers;
 [Produces("application/json")]
 public class ProductsController(ProductService productService) : ControllerBase
 {
-    /// <summary>All products. Editors and admins can include disabled and uncategorized ones.</summary>
+    /// <summary>
+    /// Products, optionally filtered. Every filter is optional and they combine with AND (values within one filter: any of them).
+    /// Normal users only get active products; editors and admins can filter on any status.
+    /// </summary>
     [HttpGet]
-    public Task<List<ProductResponse>> GetAll(bool includeHidden, CancellationToken cancellationToken) =>
-        productService.GetAllAsync(includeHidden, cancellationToken);
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    public Task<List<ProductResponse>> GetAll([FromQuery] ProductQuery query, CancellationToken cancellationToken) =>
+        productService.GetAllAsync(query, cancellationToken);
 
     /// <summary>Products whose name contains the given text (case-insensitive).</summary>
     [HttpGet("search")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
-    public Task<List<ProductResponse>> Search([FromQuery] string name, bool includeHidden, CancellationToken cancellationToken) =>
-        productService.SearchAsync(name, includeHidden, cancellationToken);
+    public Task<List<ProductResponse>> Search([FromQuery] string name, CancellationToken cancellationToken) =>
+        productService.SearchAsync(name, cancellationToken);
 
     /// <summary>Products with stock between min and max (both inclusive, both optional).</summary>
     [HttpGet("stock-level")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
-    public Task<List<ProductResponse>> GetByStockLevel(int? min, int? max, bool includeHidden, CancellationToken cancellationToken) =>
-        productService.GetByStockLevelAsync(min, max, includeHidden, cancellationToken);
+    public Task<List<ProductResponse>> GetByStockLevel(int? min, int? max, CancellationToken cancellationToken) =>
+        productService.GetByStockLevelAsync(min, max, cancellationToken);
 
     [HttpGet("{id:int}")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]

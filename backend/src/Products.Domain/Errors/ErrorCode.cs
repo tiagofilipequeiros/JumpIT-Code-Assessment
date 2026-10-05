@@ -17,6 +17,7 @@ public enum ErrorCode
     StockLimitExceeded,
     InvalidQuantity,
     InvalidStockRange,
+    InvalidPriceRange,
     CategoryNotFound,
     InvalidCategory,
     CategoryNameTaken,

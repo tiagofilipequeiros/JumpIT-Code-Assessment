@@ -20,6 +20,7 @@ public static class ErrorCodeMappings
         [ErrorCode.StockLimitExceeded] = (StatusCodes.Status409Conflict, "Stock would exceed the maximum allowed."),
         [ErrorCode.InvalidQuantity] = (StatusCodes.Status400BadRequest, "Quantity is out of the allowed range."),
         [ErrorCode.InvalidStockRange] = (StatusCodes.Status400BadRequest, "Minimum stock cannot be greater than maximum stock."),
+        [ErrorCode.InvalidPriceRange] = (StatusCodes.Status400BadRequest, "Minimum price cannot be greater than maximum price."),
         [ErrorCode.CategoryNotFound] = (StatusCodes.Status404NotFound, "Category not found."),
         [ErrorCode.InvalidCategory] = (StatusCodes.Status400BadRequest, "The selected category cannot be used."),
         [ErrorCode.CategoryNameTaken] = (StatusCodes.Status409Conflict, "A category with this name already exists."),

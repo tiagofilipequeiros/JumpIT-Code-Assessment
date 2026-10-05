@@ -119,7 +119,7 @@ export class MetricsPage {
       untracked(() => this.loadStockHistory(ids, days));
     });
 
-    this.productsService.getAll(true).subscribe({
+    this.productsService.getAll().subscribe({
       next: (products) => this.productOptions.set(products),
       error: (error) => this.notifications.error(error),
     });

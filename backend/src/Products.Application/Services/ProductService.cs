@@ -16,36 +16,46 @@ public class ProductService(
     UserMetricService metrics,
     TimeProvider clock)
 {
-    public async Task<List<ProductResponse>> GetAllAsync(bool includeHidden, CancellationToken cancellationToken) =>
-        await ListAsync(new ProductFilter(await CanSeeHiddenAsync(includeHidden, cancellationToken)), cancellationToken);
-
-    public async Task<List<ProductResponse>> SearchAsync(string? name, bool includeHidden, CancellationToken cancellationToken)
+    // GET /api/products: every filter optional, combined with AND.
+    public async Task<List<ProductResponse>> GetAllAsync(ProductQuery query, CancellationToken cancellationToken)
     {
-        var term = name?.Trim() ?? string.Empty;
-        if (term.Length == 0)
+        EnsureValidRange(query.MinStock, query.MaxStock, ErrorCode.InvalidStockRange, "stock");
+        EnsureValidRange(query.MinPrice, query.MaxPrice, ErrorCode.InvalidPriceRange, "price");
+
+        var filter = new ProductFilter
+        {
+            NameContains = string.IsNullOrWhiteSpace(query.Search) ? null : query.Search.Trim(),
+            CategoryIds = query.CategoryIds.Distinct().ToList(),
+            Statuses = await VisibleStatusesAsync(query.Statuses, cancellationToken),
+            StockStatuses = query.StockStatuses.Distinct().ToList(),
+            MinStock = query.MinStock,
+            MaxStock = query.MaxStock,
+            MinPrice = query.MinPrice,
+            MaxPrice = query.MaxPrice,
+        };
+        return await ListAsync(filter, cancellationToken);
+    }
+
+    // GET /api/products/search (from the assessment): the name filter on its own.
+    public async Task<List<ProductResponse>> SearchAsync(string? name, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(name))
         {
             throw new AppException(ErrorCode.ValidationFailed, "Search name is required.");
         }
 
-        // Partial match; case-insensitive because of the SQL Server default collation.
-        var filter = new ProductFilter(await CanSeeHiddenAsync(includeHidden, cancellationToken), NameContains: term);
-        return await ListAsync(filter, cancellationToken);
+        return await GetAllAsync(new ProductQuery { Search = name }, cancellationToken);
     }
 
-    public async Task<List<ProductResponse>> GetByStockLevelAsync(int? min, int? max, bool includeHidden, CancellationToken cancellationToken)
+    // GET /api/products/stock-level (from the assessment): the stock range on its own.
+    public async Task<List<ProductResponse>> GetByStockLevelAsync(int? min, int? max, CancellationToken cancellationToken)
     {
         if (min < 0 || max < 0)
         {
             throw new AppException(ErrorCode.InvalidStockRange, "Stock values cannot be negative.");
         }
 
-        if (min > max)
-        {
-            throw new AppException(ErrorCode.InvalidStockRange);
-        }
-
-        var filter = new ProductFilter(await CanSeeHiddenAsync(includeHidden, cancellationToken), MinStock: min, MaxStock: max);
-        return await ListAsync(filter, cancellationToken);
+        return await GetAllAsync(new ProductQuery { MinStock = min, MaxStock = max }, cancellationToken);
     }
 
     public async Task<ProductResponse> GetByIdAsync(int id, CancellationToken cancellationToken)
@@ -220,6 +230,21 @@ public class ProductService(
     // Only editors and admins may see hidden products; for anyone else the flag is ignored.
     private async Task<bool> CanSeeHiddenAsync(bool requested, CancellationToken cancellationToken) =>
         requested && await currentUser.HasAsync(Permission.ViewHidden, cancellationToken);
+
+    // Normal users only ever get active products, whatever they ask for (silently, so one UI works for every role).
+    private async Task<IReadOnlyCollection<ProductStatus>> VisibleStatusesAsync(
+        IEnumerable<ProductStatus> requested, CancellationToken cancellationToken) =>
+        await currentUser.HasAsync(Permission.ViewHidden, cancellationToken)
+            ? requested.Distinct().ToList()
+            : [ProductStatus.Active];
+
+    private static void EnsureValidRange<T>(T? min, T? max, ErrorCode error, string what) where T : struct, IComparable<T>
+    {
+        if (min is { } low && max is { } high && low.CompareTo(high) > 0)
+        {
+            throw new AppException(error, $"Minimum {what} cannot be greater than maximum {what}.");
+        }
+    }
 
     private async Task<List<ProductResponse>> ListAsync(ProductFilter filter, CancellationToken cancellationToken) =>
         (await products.ListAsync(filter, cancellationToken)).Select(ProductResponse.From).ToList();

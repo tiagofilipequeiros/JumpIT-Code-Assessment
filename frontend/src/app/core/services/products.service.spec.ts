@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ErrorCode } from '../enums/error-code';
+import { ProductStatus, StockStatus } from '../enums/product-status';
 import { Permission, Role } from '../enums/permission';
 import { apiErrorInterceptor } from '../interceptors/api-error.interceptor';
 import { userIdInterceptor } from '../interceptors/user-id.interceptor';
@@ -28,20 +29,37 @@ describe('ProductsService', () => {
 
   afterEach(() => http.verify());
 
-  it('calls the search endpoint with the name', () => {
-    service.search('lens', false).subscribe();
+  it('sends every filter in one request, lists as repeated parameters', () => {
+    service
+      .getAll({
+        search: ' lens ',
+        categoryIds: [2, 3],
+        statuses: [ProductStatus.Active, ProductStatus.Disabled],
+        stockStatuses: [StockStatus.LowStock],
+        minStock: 0,
+        maxStock: null,
+        minPrice: 10,
+        maxPrice: 300,
+      })
+      .subscribe();
 
-    const request = http.expectOne((r) => r.url === `${environment.apiUrl}/products/search`);
-    expect(request.request.params.get('name')).toBe('lens');
+    const request = http.expectOne((r) => r.url === `${environment.apiUrl}/products`);
+    const params = request.request.params;
+    expect(params.get('search')).toBe('lens');
+    expect(params.getAll('categoryIds')).toEqual(['2', '3']);
+    expect(params.getAll('statuses')).toEqual(['Active', 'Disabled']);
+    expect(params.getAll('stockStatuses')).toEqual(['LowStock']);
+    expect(params.get('minStock')).toBe('0');
+    expect(params.has('maxStock')).toBe(false);
+    expect(params.get('maxPrice')).toBe('300');
     request.flush([]);
   });
 
-  it('only sends the stock limits that are set', () => {
-    service.getByStockLevel(null, 5, false).subscribe();
+  it('sends no parameters when nothing is filtered', () => {
+    service.getAll().subscribe();
 
-    const request = http.expectOne((r) => r.url === `${environment.apiUrl}/products/stock-level`);
-    expect(request.request.params.has('min')).toBe(false);
-    expect(request.request.params.get('max')).toBe('5');
+    const request = http.expectOne((r) => r.url === `${environment.apiUrl}/products`);
+    expect(request.request.params.keys()).toEqual([]);
     request.flush([]);
   });
 
@@ -62,7 +80,7 @@ describe('ProductsService', () => {
       permissions: [Permission.ChangeStock],
     });
 
-    service.getAll(false).subscribe();
+    service.getAll().subscribe();
 
     const request = http.expectOne((r) => r.url === `${environment.apiUrl}/products`);
     expect(request.request.headers.get('X-User-Id')).toBe('3');

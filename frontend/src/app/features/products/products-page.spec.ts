@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { Permission, Role } from '../../core/enums/permission';
+import { ProductStatus, StockStatus } from '../../core/enums/product-status';
 import { Product } from '../../core/models/product';
 import { User } from '../../core/models/user';
 import { SessionStore } from '../../core/services/session.store';
@@ -18,6 +19,8 @@ const product: Product = {
   categoryId: 2,
   categoryName: 'Objectives',
   isActive: true,
+  status: ProductStatus.Active,
+  stockStatus: StockStatus.OutOfStock,
   createdAt: '2026-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
   updatedByName: null,
@@ -52,6 +55,9 @@ async function render(signedIn: User) {
   return fixture.nativeElement as HTMLElement;
 }
 
+const filterLabels = (page: HTMLElement) =>
+  [...page.querySelectorAll('app-product-filters mat-label')].map((label) => label.textContent?.trim());
+
 describe('ProductsPage', () => {
   it('shows the products returned by the API with their stock', async () => {
     const page = await render(user(Role.User, [Permission.ChangeStock]));
@@ -64,7 +70,7 @@ describe('ProductsPage', () => {
     const page = await render(user(Role.User, [Permission.ChangeStock]));
 
     expect(page.textContent).not.toContain('New product');
-    expect(page.textContent).not.toContain('Show hidden');
+    expect(filterLabels(page)).not.toContain('Status');
   });
 
   it('shows editing and the hidden toggle for editors', async () => {
@@ -73,6 +79,6 @@ describe('ProductsPage', () => {
     );
 
     expect(page.textContent).toContain('New product');
-    expect(page.textContent).toContain('Show hidden');
+    expect(filterLabels(page)).toContain('Status');
   });
 });

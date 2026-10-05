@@ -127,15 +127,15 @@ public sealed class ProductSteps(ScenarioApi api)
 
     [Then("{string} does not see {string}")]
     public async Task DoesNotSee(string userName, string name) =>
-        Assert.DoesNotContain(await ListAsync(userName, includeHidden: false), p => p.Name == name);
+        Assert.DoesNotContain(await ListAsync(userName), p => p.Name == name);
 
     [Then("{string} sees {string}")]
     public async Task Sees(string userName, string name) =>
-        Assert.Contains(await ListAsync(userName, includeHidden: false), p => p.Name == name);
+        Assert.Contains(await ListAsync(userName), p => p.Name == name);
 
     [Then("{string} sees {string} when showing hidden products")]
     public async Task SeesWhenShowingHidden(string userName, string name) =>
-        Assert.Contains(await ListAsync(userName, includeHidden: true), p => p.Name == name);
+        Assert.Contains(await ListAsync(userName, "?statuses=Disabled"), p => p.Name == name);
 
     [Then("the product {string} is in the category {string}")]
     public async Task IsInCategory(string name, string categoryName) =>
@@ -144,12 +144,12 @@ public sealed class ProductSteps(ScenarioApi api)
     // Looks a product up by name as the admin, who sees everything.
     private async Task<ProductResponse> FindAsync(string name)
     {
-        var products = await (await api.Client(Admin).GetAsync("/api/products?includeHidden=true")).ReadAsync<List<ProductResponse>>();
+        var products = await (await api.Client(Admin).GetAsync("/api/products")).ReadAsync<List<ProductResponse>>();
         return products.Single(p => p.Name == name);
     }
 
-    private async Task<List<ProductResponse>> ListAsync(string userName, bool includeHidden) =>
-        await (await api.ClientFor(userName).GetAsync($"/api/products?includeHidden={includeHidden}")).ReadAsync<List<ProductResponse>>();
+    private async Task<List<ProductResponse>> ListAsync(string userName, string query = "") =>
+        await (await api.ClientFor(userName).GetAsync($"/api/products{query}")).ReadAsync<List<ProductResponse>>();
 
     private static object UpdateOf(ProductResponse product, decimal? price = null, int? stock = null) => new
     {

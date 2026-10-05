@@ -2,6 +2,7 @@ using System.Net;
 using Products.Application.Dtos.Products;
 using Products.Application.Dtos.Categories;
 using Products.Application.Dtos.Users;
+using Products.Domain.Entities;
 using Products.IntegrationTests.Infrastructure;
 using Products.TestSupport;
 
@@ -25,18 +26,24 @@ public class ProductReadTests(SqlServerFixture sqlServer) : IntegrationTest(sqlS
     [Fact]
     public async Task Normal_user_cannot_see_hidden_products_even_when_asking()
     {
-        var products = await (await AsUser.GetAsync("/api/products?includeHidden=true")).ReadAsync<List<ProductResponse>>();
+        var products = await (await AsUser.GetAsync("/api/products?statuses=Disabled&statuses=Uncategorized"))
+            .ReadAsync<List<ProductResponse>>();
 
         Assert.Equal(10, products.Count);
+        Assert.All(products, p => Assert.Equal(ProductStatus.Active, p.Status));
     }
 
     [Fact]
-    public async Task Editor_can_include_hidden_products()
+    public async Task Editors_see_every_product_with_its_status()
     {
-        var products = await (await AsEditor.GetAsync("/api/products?includeHidden=true")).ReadAsync<List<ProductResponse>>();
+        var products = await (await AsEditor.GetAsync("/api/products")).ReadAsync<List<ProductResponse>>();
 
         Assert.Equal(13, products.Count);
-        Assert.All(HiddenSeedIds, id => Assert.Contains(products, p => p.Id == id));
+        Assert.Equal(ProductStatus.Uncategorized, products.Single(p => p.Id == 100010).Status);
+        Assert.Equal(ProductStatus.Disabled, products.Single(p => p.Id == 100011).Status);
+        Assert.Equal(ProductStatus.CategoryDisabled, products.Single(p => p.Id == 100012).Status);
+        Assert.Equal(StockStatus.OutOfStock, products.Single(p => p.Id == 100004).StockStatus);
+        Assert.Equal(StockStatus.LowStock, products.Single(p => p.Id == 100002).StockStatus);
     }
 
     [Fact]
