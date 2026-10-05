@@ -56,7 +56,9 @@ async function render(signedIn: User) {
 }
 
 const filterLabels = (page: HTMLElement) =>
-  [...page.querySelectorAll('app-product-filters mat-label')].map((label) => label.textContent?.trim());
+  [...page.querySelectorAll('app-product-filters mat-label')].map((label) =>
+    label.textContent?.trim(),
+  );
 
 describe('ProductsPage', () => {
   it('shows the products returned by the API with their stock', async () => {
@@ -75,7 +77,12 @@ describe('ProductsPage', () => {
 
   it('shows editing and the hidden toggle for editors', async () => {
     const page = await render(
-      user(Role.Editor, [Permission.ChangeStock, Permission.Edit, Permission.ToggleActive, Permission.ViewHidden]),
+      user(Role.Editor, [
+        Permission.ChangeStock,
+        Permission.Edit,
+        Permission.ToggleActive,
+        Permission.ViewHidden,
+      ]),
     );
 
     expect(page.textContent).toContain('New product');

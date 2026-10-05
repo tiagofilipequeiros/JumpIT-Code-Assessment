@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using Products.Application.Dtos.Products;
 using Products.Domain.Entities;
 
-namespace Products.UnitTests;
+namespace Products.UnitTests.Dtos;
 
 public class ProductRequestValidationTests
 {
@@ -28,6 +28,24 @@ public class ProductRequestValidationTests
     public void Name_too_short_is_invalid(string name)
     {
         Assert.Contains(nameof(ProductRequest.Name), InvalidFields(Valid(name: name)));
+    }
+
+    [Fact]
+    public void Text_is_trimmed_before_validation()
+    {
+        var request = Valid(name: "  a  ", description: "   ");
+
+        Assert.Equal("a", request.Name);
+        Assert.Null(request.Description);
+        Assert.Contains(nameof(ProductRequest.Name), InvalidFields(request));
+    }
+
+    [Fact]
+    public void Update_without_row_version_is_invalid()
+    {
+        var request = new UpdateProductRequest { Name = "Lens", Price = 1m, Stock = 1, CategoryId = 2 };
+
+        Assert.Contains(nameof(UpdateProductRequest.RowVersion), InvalidFields(request));
     }
 
     [Fact]

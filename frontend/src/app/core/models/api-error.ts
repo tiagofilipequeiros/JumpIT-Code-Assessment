@@ -14,12 +14,15 @@ export class ApiError extends Error {
   }
 
   static from(response: HttpErrorResponse): ApiError {
-    if (response.status === 0) {
-      return new ApiError(0, ErrorCode.NetworkError, null, {});
+    // 0: no answer at all; 502-504: nginx answered but the API behind it did not.
+    if (response.status === 0 || [502, 503, 504].includes(response.status)) {
+      return new ApiError(response.status, ErrorCode.NetworkError, null, {});
     }
 
     const body = response.error ?? {};
-    const code = Object.values(ErrorCode).includes(body.code) ? (body.code as ErrorCode) : ErrorCode.Unexpected;
+    const code = Object.values(ErrorCode).includes(body.code)
+      ? (body.code as ErrorCode)
+      : ErrorCode.Unexpected;
     const fieldErrors: Record<string, string[]> = {};
     for (const [field, messages] of Object.entries<string[]>(body.errors ?? {})) {
       fieldErrors[field.charAt(0).toLowerCase() + field.slice(1)] = messages;

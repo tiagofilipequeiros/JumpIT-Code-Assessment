@@ -15,12 +15,15 @@ export class NotificationService {
   success(message: FeedbackMessage, suffix = ''): void {
     this.snackBar.open(suffix ? `${message} ${suffix}` : message, 'OK', {
       duration: SUCCESS_DURATION_MS,
-      panelClass: 'snackbar-success',
     });
   }
 
   error(error: unknown): void {
-    const message = error instanceof ApiError ? error.message : ERROR_MESSAGES[ErrorCode.Unexpected];
-    this.snackBar.open(message, 'Close', { duration: ERROR_DURATION_MS, panelClass: 'snackbar-error' });
+    const message =
+      error instanceof ApiError ? error.message : ERROR_MESSAGES[ErrorCode.Unexpected];
+    this.snackBar.open(message, 'Close', {
+      duration: ERROR_DURATION_MS,
+      panelClass: 'snackbar-error',
+    });
   }
 }

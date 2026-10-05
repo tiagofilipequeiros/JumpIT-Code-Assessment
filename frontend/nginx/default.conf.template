@@ -2,6 +2,12 @@ server {
     listen 80;
     root /usr/share/nginx/html;
 
+    # Basic hardening. No Content-Security-Policy: the app loads Google Fonts and the charts inject styles.
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    server_tokens off;
+
     gzip on;
     gzip_types text/css application/javascript application/json image/svg+xml;
 
@@ -14,14 +20,19 @@ server {
     }
 
     # Built files have a content hash in their name, so they can be cached for a long time.
-    location ~* \.(js|css|woff2?|ico|png|svg)$ {
+    # (nginx drops server-level add_header in a location that sets its own, so the hardening headers are repeated.)
+    location ~* \.(js|css|woff2?)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
+        add_header X-Content-Type-Options "nosniff" always;
     }
 
     # Angular routes (e.g. /categories) are handled in the browser: always serve index.html, never cached.
     location / {
         try_files $uri $uri/ /index.html;
         add_header Cache-Control "no-cache";
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     }
 }

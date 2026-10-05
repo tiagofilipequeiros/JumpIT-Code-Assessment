@@ -209,7 +209,9 @@ public class DemoActivitySeeder(AppDbContext db, TimeProvider clock)
             "ALTER TABLE [Products] SET (SYSTEM_VERSIONING = ON (HISTORY_TABLE = [dbo].[ProductsHistory]))", cancellationToken);
     }
 
-    private static string SqlDate(DateTime value) => $"'{value:yyyy-MM-ddTHH:mm:ss.fffffff}'";
+    // Invariant culture: ":" in a custom format is the culture's time separator otherwise.
+    private static string SqlDate(DateTime value) =>
+        "'" + value.ToString("yyyy-MM-ddTHH:mm:ss.fffffff", CultureInfo.InvariantCulture) + "'";
 
     private void Record(
         int userId, MetricEntity entity, MetricAction action, int entityId, DateTime time, string? details = null, int? quantity = null) =>

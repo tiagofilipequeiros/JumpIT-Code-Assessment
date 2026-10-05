@@ -1,6 +1,12 @@
 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
   <h1 class="page-title mb-0 me-auto">Metrics</h1>
-  <button mat-icon-button (click)="reload()" matTooltip="Refresh" aria-label="Refresh">
+  <button
+    mat-icon-button
+    (click)="reload()"
+    [disabled]="loadingProducts() || loadingUsers()"
+    matTooltip="Refresh"
+    aria-label="Refresh"
+  >
     <mat-icon>refresh</mat-icon>
   </button>
 </div>
@@ -14,8 +20,12 @@
       aria-label="Metrics view"
       hideSingleSelectionIndicator
     >
-      <mat-button-toggle [value]="MetricsView.Products"><mat-icon>inventory_2</mat-icon> Products</mat-button-toggle>
-      <mat-button-toggle [value]="MetricsView.Users"><mat-icon>group</mat-icon> Users</mat-button-toggle>
+      <mat-button-toggle [value]="MetricsView.Products"
+        ><mat-icon>inventory_2</mat-icon> Products</mat-button-toggle
+      >
+      <mat-button-toggle [value]="MetricsView.Users"
+        ><mat-icon>group</mat-icon> Users</mat-button-toggle
+      >
     </mat-button-toggle-group>
   }
 
@@ -37,7 +47,10 @@
         @for (product of productOptions(); track product.id) {
           <mat-option
             [value]="product.id"
-            [disabled]="selectedProductIds().length >= maxStockProducts && !selectedProductIds().includes(product.id)"
+            [disabled]="
+              selectedProductIds().length >= maxStockProducts &&
+              !selectedProductIds().includes(product.id)
+            "
           >
             {{ product.name }}
           </mat-option>
@@ -52,16 +65,36 @@
   @let kpis = productMetrics()?.kpis;
   <div class="row g-3 mb-3">
     <div class="col-6 col-lg-3">
-      <app-stat-tile label="Inventory value" icon="account_balance" [value]="kpis ? (kpis.inventoryValue | currency: 'EUR' : 'symbol' : '1.0-0') : null" hint="Active products, now" />
+      <app-stat-tile
+        label="Inventory value"
+        icon="account_balance"
+        [value]="kpis ? (kpis.inventoryValue | currency: 'EUR' : 'symbol' : '1.0-0') : null"
+        hint="Active products, now"
+      />
     </div>
     <div class="col-6 col-lg-3">
-      <app-stat-tile label="Out of stock" icon="block" [value]="kpis?.outOfStock ?? null" hint="Active products, now" />
+      <app-stat-tile
+        label="Out of stock"
+        icon="block"
+        [value]="kpis?.outOfStock ?? null"
+        hint="Active products, now"
+      />
     </div>
     <div class="col-6 col-lg-3">
-      <app-stat-tile label="Low stock" icon="trending_down" [value]="kpis?.lowStock ?? null" hint="1 to 5 left, now" />
+      <app-stat-tile
+        label="Low stock"
+        icon="trending_down"
+        [value]="kpis?.lowStock ?? null"
+        hint="1 to 5 left, now"
+      />
     </div>
     <div class="col-6 col-lg-3">
-      <app-stat-tile label="Units removed" icon="output" [value]="kpis ? (kpis.unitsRemoved | number) : null" [hint]="periodLabel()" />
+      <app-stat-tile
+        label="Units removed"
+        icon="output"
+        [value]="kpis ? (kpis.unitsRemoved | number) : null"
+        [hint]="periodLabel()"
+      />
     </div>
   </div>
 
@@ -96,16 +129,36 @@
   @let kpis = userMetrics()?.kpis;
   <div class="row g-3 mb-3">
     <div class="col-6 col-lg-3">
-      <app-stat-tile label="Active users" icon="person_check" [value]="kpis?.activeUsers ?? null" hint="Any action, last 7 days" />
+      <app-stat-tile
+        label="Active users"
+        icon="person_check"
+        [value]="kpis?.activeUsers ?? null"
+        hint="Any action, last 7 days"
+      />
     </div>
     <div class="col-6 col-lg-3">
-      <app-stat-tile label="Logins" icon="login" [value]="kpis ? (kpis.logins | number) : null" [hint]="periodLabel()" />
+      <app-stat-tile
+        label="Logins"
+        icon="login"
+        [value]="kpis ? (kpis.logins | number) : null"
+        [hint]="periodLabel()"
+      />
     </div>
     <div class="col-6 col-lg-3">
-      <app-stat-tile label="Edits" icon="edit" [value]="kpis ? (kpis.edits | number) : null" [hint]="periodLabel()" />
+      <app-stat-tile
+        label="Edits"
+        icon="edit"
+        [value]="kpis ? (kpis.edits | number) : null"
+        [hint]="periodLabel()"
+      />
     </div>
     <div class="col-6 col-lg-3">
-      <app-stat-tile label="Stock changes" icon="inventory" [value]="kpis ? (kpis.stockChanges | number) : null" [hint]="periodLabel()" />
+      <app-stat-tile
+        label="Stock changes"
+        icon="inventory"
+        [value]="kpis ? (kpis.stockChanges | number) : null"
+        [hint]="periodLabel()"
+      />
     </div>
   </div>
 
@@ -119,7 +172,12 @@
       />
     </div>
     <div class="col-12 col-xl-6">
-      <app-chart title="Actions per user" [subtitle]="periodLabel()" [config]="perUserConfig()" [loading]="loadingUsers()" />
+      <app-chart
+        title="Actions per user"
+        [subtitle]="periodLabel()"
+        [config]="perUserConfig()"
+        [loading]="loadingUsers()"
+      />
     </div>
     <div class="col-12 col-xl-6">
       <app-chart

@@ -68,7 +68,9 @@ export class ProductsPage {
   protected readonly dataSource = new MatTableDataSource<Product>([]);
 
   // All filters in one value, also kept in the URL (?search=lens&category=2&stock=LowStock).
-  protected readonly filters = signal<ProductFilters>(filtersFromUrl(this.route.snapshot.queryParamMap));
+  protected readonly filters = signal<ProductFilters>(
+    filtersFromUrl(this.route.snapshot.queryParamMap),
+  );
 
   // What the current user may do (the API enforces the same rules).
   protected readonly canEdit = computed(() => this.session.can(Permission.Edit));
@@ -92,8 +94,21 @@ export class ProductsPage {
   private loadSubscription?: Subscription;
 
   constructor() {
-    this.dataSource.sortingDataAccessor = (product, column) =>
-      column === 'category' ? product.categoryName.toLowerCase() : (product as any)[column];
+    // Text columns sort case-insensitively.
+    this.dataSource.sortingDataAccessor = (product, column) => {
+      switch (column) {
+        case 'name':
+          return product.name.toLowerCase();
+        case 'category':
+          return product.categoryName.toLowerCase();
+        case 'price':
+          return product.price;
+        case 'stock':
+          return product.stock;
+        default:
+          return product.id;
+      }
+    };
 
     effect(() => {
       this.dataSource.sort = this.sort();
@@ -104,7 +119,14 @@ export class ProductsPage {
     effect(() => {
       this.session.user();
       const filters = this.filters();
-      untracked(() => this.load(filters));
+      untracked(() => {
+        // Normal users only have active products: drop a status filter left by a previous user.
+        if (!this.canViewHidden() && filters.statuses.length > 0) {
+          this.filters.set({ ...filters, statuses: [] });
+          return;
+        }
+        this.load(filters);
+      });
     });
 
     effect(() => {
@@ -137,13 +159,11 @@ export class ProductsPage {
   }
 
   private load(filters: ProductFilters): void {
-    // Normal users only have active products: a status filter would mean nothing to them.
-    const applied = this.canViewHidden() ? filters : { ...filters, statuses: [] };
-    this.saveFiltersToUrl(applied);
+    this.saveFiltersToUrl(filters);
 
     this.loadSubscription?.unsubscribe();
     this.loading.set(true);
-    this.loadSubscription = this.productsService.getAll(applied).subscribe({
+    this.loadSubscription = this.productsService.getAll(filters).subscribe({
       next: (products) => {
         this.dataSource.data = products;
         this.resultCount.set(products.length);
@@ -181,7 +201,9 @@ export class ProductsPage {
     const isActive = !product.isActive;
     this.productsService.setActive(product.id, isActive).subscribe({
       next: () => {
-        this.notifications.success(isActive ? FeedbackMessage.ProductEnabled : FeedbackMessage.ProductDisabled);
+        this.notifications.success(
+          isActive ? FeedbackMessage.ProductEnabled : FeedbackMessage.ProductDisabled,
+        );
         this.reload();
       },
       error: (error) => this.notifications.error(error),
@@ -212,7 +234,7 @@ export class ProductsPage {
       });
   }
 
-  // Filters live in the URL (?mode=name&name=lens), so a refresh or a shared link shows the same list.
+  // Filters live in the URL (?search=lens&category=2&stock=LowStock), so a refresh or a shared link shows the same list.
   private saveFiltersToUrl(filters: ProductFilters): void {
     const queryParams = {
       search: filters.search || null,
@@ -236,18 +258,29 @@ export class ProductsPage {
   }
 }
 
+// Anything invalid in the URL (?minStock=abc, negative values, min above max) is ignored.
 function filtersFromUrl(params: ParamMap): ProductFilters {
-  const number = (key: string) => (params.get(key) ? Number(params.get(key)) : null);
-  const valid = <T extends string>(values: string[], allowed: T[]) => values.filter((v): v is T => allowed.includes(v as T));
+  const number = (key: string, whole = false) => {
+    const value = Number(params.get(key) ?? undefined);
+    return Number.isFinite(value) && value >= 0 && (!whole || Number.isInteger(value))
+      ? value
+      : null;
+  };
+  const ordered = (min: number | null, max: number | null) =>
+    min !== null && max !== null && min > max ? [null, null] : [min, max];
+  const [minStock, maxStock] = ordered(number('minStock', true), number('maxStock', true));
+  const [minPrice, maxPrice] = ordered(number('minPrice'), number('maxPrice'));
+  const valid = <T extends string>(values: string[], allowed: T[]) =>
+    values.filter((v): v is T => allowed.includes(v as T));
   return {
     ...NO_FILTERS,
     search: params.get('search') ?? '',
     categoryIds: params.getAll('category').map(Number).filter(Number.isInteger),
     statuses: valid(params.getAll('status'), Object.values(ProductStatus)),
     stockStatuses: valid(params.getAll('stock'), Object.values(StockStatus)),
-    minStock: number('minStock'),
-    maxStock: number('maxStock'),
-    minPrice: number('minPrice'),
-    maxPrice: number('maxPrice'),
+    minStock,
+    maxStock,
+    minPrice,
+    maxPrice,
   };
 }

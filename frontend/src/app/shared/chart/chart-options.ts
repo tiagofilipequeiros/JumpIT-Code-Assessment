@@ -53,10 +53,21 @@ function timeline(config: TimelineChartConfig, height: number): ApexOptions {
       toolbar: {
         show: true,
         autoSelected: 'zoom',
-        tools: { download: false, selection: false, pan: false, zoom: true, zoomin: true, zoomout: true, reset: true },
+        tools: {
+          download: false,
+          selection: false,
+          pan: false,
+          zoom: true,
+          zoomin: true,
+          zoomout: true,
+          reset: true,
+        },
       },
     },
-    series: config.series.map((s) => ({ name: s.name, data: s.data.map((p) => ({ x: new Date(p.x).getTime(), y: p.y })) })),
+    series: config.series.map((s) => ({
+      name: s.name,
+      data: s.data.map((p) => ({ x: new Date(p.x).getTime(), y: p.y })),
+    })),
     colors: colors(config.series),
     // Bars get a 2px surface gap instead of an outline; lines are 2px.
     stroke:
@@ -101,7 +112,9 @@ function bar(config: BarChartConfig, height: number): ApexOptions {
     // A 2px surface-coloured gap between bars and stacked segments, instead of borders.
     stroke: { show: true, width: 2, colors: [CHART_SURFACE] },
     // Horizontal bars: values on the x axis, category names on the y axis.
-    yaxis: config.horizontal ? { labels: { style: { colors: CHART_TEXT }, maxWidth: 220 } } : common.yaxis,
+    yaxis: config.horizontal
+      ? { labels: { style: { colors: CHART_TEXT }, maxWidth: 220 } }
+      : common.yaxis,
     xaxis: {
       categories: config.categories,
       labels: {
@@ -112,7 +125,11 @@ function bar(config: BarChartConfig, height: number): ApexOptions {
       axisTicks: { color: CHART_GRID },
     },
     // Horizontal bars: gridlines follow the value axis.
-    grid: { ...common.grid, xaxis: { lines: { show: config.horizontal ?? false } }, yaxis: { lines: { show: !config.horizontal } } },
+    grid: {
+      ...common.grid,
+      xaxis: { lines: { show: config.horizontal ?? false } },
+      yaxis: { lines: { show: !config.horizontal } },
+    },
   };
 }
 
@@ -137,22 +154,40 @@ function heatmap(config: HeatmapChartConfig, height: number): ApexOptions {
               from: i === 0 ? 0.0001 : Math.round(step * i) + 0.0001,
               to: i === SEQUENTIAL_BLUES.length - 1 ? max : Math.round(step * (i + 1)),
               color,
-              name: i === SEQUENTIAL_BLUES.length - 1 ? `${Math.round(step * i) + 1}+` : `${Math.round(step * i) + 1}-${Math.round(step * (i + 1))}`,
+              name:
+                i === SEQUENTIAL_BLUES.length - 1
+                  ? `${Math.round(step * i) + 1}+`
+                  : `${Math.round(step * i) + 1}-${Math.round(step * (i + 1))}`,
             })),
           ],
         },
       },
     },
     stroke: { show: true, width: 2, colors: [CHART_SURFACE] },
-    legend: { show: true, position: 'bottom', horizontalAlign: 'left', fontSize: '12px', labels: { colors: CHART_TEXT } },
-    xaxis: { labels: { style: { colors: CHART_TEXT }, rotate: 0, hideOverlappingLabels: true }, axisBorder: { show: false }, axisTicks: { show: false } },
+    legend: {
+      show: true,
+      position: 'bottom',
+      horizontalAlign: 'left',
+      fontSize: '12px',
+      labels: { colors: CHART_TEXT },
+    },
+    xaxis: {
+      labels: { style: { colors: CHART_TEXT }, rotate: 0, hideOverlappingLabels: true },
+      axisBorder: { show: false },
+      axisTicks: { show: false },
+    },
     yaxis: { labels: { style: { colors: CHART_TEXT } } },
     grid: { show: false },
   };
 }
 
 // Shared look: quiet axes, hairline solid grid, no numbers on the marks, legend only for 2+ series.
-function base(height: number, type: NonNullable<ApexOptions['chart']>['type'], seriesCount: number, unit?: string): ApexOptions {
+function base(
+  height: number,
+  type: NonNullable<ApexOptions['chart']>['type'],
+  seriesCount: number,
+  unit?: string,
+): ApexOptions {
   return {
     chart: {
       type,
@@ -161,7 +196,11 @@ function base(height: number, type: NonNullable<ApexOptions['chart']>['type'], s
       foreColor: CHART_TEXT,
       toolbar: { show: false },
       zoom: { enabled: false },
-      animations: { enabled: !prefersReducedMotion(), speed: 300, animateGradually: { enabled: false } },
+      animations: {
+        enabled: !prefersReducedMotion(),
+        speed: 300,
+        animateGradually: { enabled: false },
+      },
       parentHeightOffset: 0,
     },
     dataLabels: { enabled: false },
@@ -173,9 +212,17 @@ function base(height: number, type: NonNullable<ApexOptions['chart']>['type'], s
       markers: { size: 6 },
       labels: { colors: CHART_TEXT },
     },
-    grid: { borderColor: CHART_GRID, strokeDashArray: 0, xaxis: { lines: { show: false } }, padding: { left: 8, right: 8 } },
+    grid: {
+      borderColor: CHART_GRID,
+      strokeDashArray: 0,
+      xaxis: { lines: { show: false } },
+      padding: { left: 8, right: 8 },
+    },
     yaxis: { labels: { style: { colors: CHART_TEXT }, formatter: (v: number) => formatNumber(v) } },
-    tooltip: { theme: 'light', y: { formatter: (v: number) => (unit ? `${formatNumber(v)} ${unit}` : formatNumber(v)) } },
+    tooltip: {
+      theme: 'light',
+      y: { formatter: (v: number) => (unit ? `${formatNumber(v)} ${unit}` : formatNumber(v)) },
+    },
     states: { hover: { filter: { type: 'darken' } }, active: { filter: { type: 'none' } } },
   };
 }
@@ -185,7 +232,10 @@ function colors(series: ChartSeries<unknown>[]): string[] {
 }
 
 function prefersReducedMotion(): boolean {
-  return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+  return (
+    typeof window !== 'undefined' &&
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
+  );
 }
 
 export function formatNumber(value: number): string {

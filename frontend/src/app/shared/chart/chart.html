@@ -26,7 +26,11 @@
   </div>
 
   <!-- While reloading, the previous chart stays visible (dimmed) instead of flashing a placeholder. -->
-  <div class="chart-body" [class.reloading]="loading() && config()" [style.min-height.px]="height()">
+  <div
+    class="chart-body"
+    [class.reloading]="loading() && config()"
+    [style.min-height.px]="height()"
+  >
     @if (!config()) {
       <div class="chart-message" [style.height.px]="height()">Loading…</div>
     } @else if (isEmpty()) {

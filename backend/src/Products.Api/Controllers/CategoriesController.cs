@@ -21,7 +21,9 @@ public class CategoriesController(CategoryService categoryService) : ControllerB
     /// <summary>Requires the Editor or Admin role.</summary>
     [HttpPost]
     [ProducesResponseType<CategoryResponse>(StatusCodes.Status201Created)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<CategoryResponse>> Create(CategoryRequest request, CancellationToken cancellationToken)
     {
@@ -31,6 +33,9 @@ public class CategoriesController(CategoryService categoryService) : ControllerB
 
     /// <summary>Requires the Editor or Admin role.</summary>
     [HttpPut("{id:int}")]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public Task<CategoryResponse> Update(int id, UpdateCategoryRequest request, CancellationToken cancellationToken) =>
@@ -39,6 +44,8 @@ public class CategoriesController(CategoryService categoryService) : ControllerB
     /// <summary>Requires the Admin role. Products of the category are moved to Uncategorized.</summary>
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
@@ -49,11 +56,19 @@ public class CategoriesController(CategoryService categoryService) : ControllerB
 
     /// <summary>Requires the Editor or Admin role.</summary>
     [HttpPost("{id:int}/enable")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public Task<CategoryResponse> Enable(int id, CancellationToken cancellationToken) =>
         categoryService.SetActiveAsync(id, isActive: true, cancellationToken);
 
     /// <summary>Requires the Editor or Admin role. Hides the category and its products from normal users.</summary>
     [HttpPost("{id:int}/disable")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public Task<CategoryResponse> Disable(int id, CancellationToken cancellationToken) =>
         categoryService.SetActiveAsync(id, isActive: false, cancellationToken);
 }

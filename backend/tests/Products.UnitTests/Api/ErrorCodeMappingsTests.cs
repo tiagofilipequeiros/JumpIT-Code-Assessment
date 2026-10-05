@@ -1,7 +1,7 @@
 using Products.Api.Errors;
 using Products.Domain.Errors;
 
-namespace Products.UnitTests;
+namespace Products.UnitTests.Api;
 
 public class ErrorCodeMappingsTests
 {

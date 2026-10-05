@@ -19,7 +19,8 @@ public class MetricsTests(SqlServerFixture sqlServer) : IntegrationTest(sqlServe
         Assert.Equal(10, metrics.Kpis.UnitsAdded);
         Assert.Equal(8, metrics.Kpis.UnitsRemoved);
         Assert.Equal(7, metrics.MovementsPerDay.Count);
-        Assert.Equal((10, 8), (metrics.MovementsPerDay[^1].Added, metrics.MovementsPerDay[^1].Removed));
+        // Summed over the period, so the test also passes when it runs across midnight (UTC).
+        Assert.Equal((10, 8), (metrics.MovementsPerDay.Sum(d => d.Added), metrics.MovementsPerDay.Sum(d => d.Removed)));
         Assert.Equal(new ProductUnits(100000, "Microscope Objective 10x", 8), metrics.TopRemoved.Single());
     }
 

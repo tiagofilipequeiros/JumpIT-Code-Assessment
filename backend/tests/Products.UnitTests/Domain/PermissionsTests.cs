@@ -1,7 +1,7 @@
 using Products.Domain.Authorization;
 using Products.Domain.Entities;
 
-namespace Products.UnitTests;
+namespace Products.UnitTests.Domain;
 
 public class PermissionsTests
 {

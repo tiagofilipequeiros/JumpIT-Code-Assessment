@@ -68,17 +68,19 @@ export class ProductFormDialog {
     }),
     price: new FormControl<number | null>(this.product?.price ?? null, [
       Validators.required,
-      Validators.min(ProductLimits.PriceMin),
+      Validators.min(0),
       Validators.max(ProductLimits.PriceMax),
       maxDecimals(2),
     ]),
     stock: new FormControl<number | null>(this.product?.stock ?? 0, [
       Validators.required,
-      Validators.min(ProductLimits.StockMin),
+      Validators.min(0),
       Validators.max(ProductLimits.StockMax),
       integer,
     ]),
-    categoryId: new FormControl<number | null>(this.product?.categoryId ?? null, [Validators.required]),
+    categoryId: new FormControl<number | null>(this.product?.categoryId ?? null, [
+      Validators.required,
+    ]),
   });
 
   protected save(): void {
@@ -96,18 +98,23 @@ export class ProductFormDialog {
       categoryId: Number(value.categoryId),
     };
 
-    this.saving.set(true);
+    this.setSaving(true);
     const save$ = this.product
-      ? this.productsService.update(this.product.id, { ...request, rowVersion: this.product.rowVersion })
+      ? this.productsService.update(this.product.id, {
+          ...request,
+          rowVersion: this.product.rowVersion,
+        })
       : this.productsService.create(request);
 
     save$.subscribe({
       next: (saved) => {
-        this.notifications.success(this.product ? FeedbackMessage.ProductUpdated : FeedbackMessage.ProductCreated);
+        this.notifications.success(
+          this.product ? FeedbackMessage.ProductUpdated : FeedbackMessage.ProductCreated,
+        );
         this.dialogRef.close(saved);
       },
       error: (error: unknown) => {
-        this.saving.set(false);
+        this.setSaving(false);
         this.notifications.error(error);
         if (error instanceof ApiError && error.code === ErrorCode.ConcurrencyConflict) {
           this.dialogRef.close('reload');
@@ -116,5 +123,11 @@ export class ProductFormDialog {
         applyServerErrors(this.form, error);
       },
     });
+  }
+
+  // While saving, the dialog can't be closed: the page must hear about the result to refresh the list.
+  private setSaving(saving: boolean): void {
+    this.saving.set(saving);
+    this.dialogRef.disableClose = saving;
   }
 }

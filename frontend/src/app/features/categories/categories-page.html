@@ -1,9 +1,17 @@
 <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
   <h1 class="page-title mb-0 me-auto">Categories</h1>
   @if (canViewHidden()) {
-    <mat-slide-toggle [checked]="includeHidden()" (change)="setIncludeHidden($event.checked)">Show hidden</mat-slide-toggle>
+    <mat-slide-toggle [checked]="includeHidden()" (change)="setIncludeHidden($event.checked)"
+      >Show hidden</mat-slide-toggle
+    >
   }
-  <button mat-icon-button (click)="load()" [disabled]="loading()" matTooltip="Refresh" aria-label="Refresh">
+  <button
+    mat-icon-button
+    (click)="load()"
+    [disabled]="loading()"
+    matTooltip="Refresh"
+    aria-label="Refresh"
+  >
     <mat-icon>refresh</mat-icon>
   </button>
   @if (canEdit()) {
@@ -45,7 +53,9 @@
       </ng-container>
 
       <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef class="text-end"><span class="visually-hidden">Actions</span></th>
+        <th mat-header-cell *matHeaderCellDef class="text-end">
+          <span class="visually-hidden">Actions</span>
+        </th>
         <td mat-cell *matCellDef="let c" class="text-end">
           @if (!c.isProtected) {
             <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Category actions">

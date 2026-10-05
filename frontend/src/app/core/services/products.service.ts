@@ -2,7 +2,13 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Product, ProductFilters, ProductRequest, ProductVersion, UpdateProductRequest } from '../models/product';
+import {
+  Product,
+  ProductFilters,
+  ProductRequest,
+  ProductVersion,
+  UpdateProductRequest,
+} from '../models/product';
 
 const url = `${environment.apiUrl}/products`;
 

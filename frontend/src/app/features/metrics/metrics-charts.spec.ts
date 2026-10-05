@@ -3,7 +3,9 @@ import { Role } from '../../core/enums/permission';
 
 describe('metrics charts', () => {
   it('keeps the same colour for an action type in every chart', () => {
-    const chart = actionsPerUserChart([{ userId: 1, name: 'Alex', role: Role.Admin, logins: 1, edits: 2, stockChanges: 3 }]);
+    const chart = actionsPerUserChart([
+      { userId: 1, name: 'Alex', role: Role.Admin, logins: 1, edits: 2, stockChanges: 3 },
+    ]);
 
     expect(chart.series.map((s) => [s.name, s.color])).toEqual([
       ['Logins', 0],

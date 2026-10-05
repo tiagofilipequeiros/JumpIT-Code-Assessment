@@ -26,6 +26,7 @@ public static class ErrorCodeMappings
         [ErrorCode.CategoryNameTaken] = (StatusCodes.Status409Conflict, "A category with this name already exists."),
         [ErrorCode.CategoryProtected] = (StatusCodes.Status409Conflict, "The Uncategorized category cannot be changed."),
         [ErrorCode.InvalidTimeRange] = (StatusCodes.Status400BadRequest, "The requested time range is not allowed."),
+        [ErrorCode.IdRangeExhausted] = (StatusCodes.Status409Conflict, "No product IDs are left in the 6-digit range."),
     };
 
     public static int Status(this ErrorCode code) => Definitions[code].Status;

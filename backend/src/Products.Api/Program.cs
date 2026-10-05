@@ -1,6 +1,11 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.OpenApi;
 using Products.Api.Auth;
+using Products.Api.Health;
 using Products.Api.Errors;
 using Products.Application;
 using Products.Application.Abstractions;
@@ -22,9 +27,12 @@ builder.Services.AddInfrastructure(builder.Configuration.GetConnectionString("De
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserAccessor, HeaderCurrentUserAccessor>();
 
-// API. Enums are sent as text ("Admin", "ProductNotFound", ...).
-builder.Services.AddControllers()
+// API. Enums are sent as text ("Admin", "ProductNotFound", ...); validation errors use the JSON field names ("name").
+builder.Services.AddControllers(options => options.ModelMetadataDetailsProviders.Add(new SystemTextJsonValidationMetadataProvider()))
     .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
+// Health: 200 when the database answers, 503 when it doesn't.
+builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("database");
 
 // Swagger docs at /docs, with an "Authorize" box to set the X-User-Id header.
 builder.Services.AddEndpointsApiExplorer();
@@ -64,10 +72,18 @@ app.UseSwaggerUI(options =>
 
 app.MapControllers();
 
-app.MapGet("/api/health", async (AppDbContext db) => new
+app.MapHealthChecks("/api/health", new HealthCheckOptions
 {
-    status = "ok",
-    database = await db.Database.CanConnectAsync() ? "ok" : "unavailable"
+    ResponseWriter = (context, report) =>
+    {
+        static string Text(HealthStatus status) => status == HealthStatus.Healthy ? "ok" : "unavailable";
+        context.Response.ContentType = "application/json";
+        return context.Response.WriteAsync(JsonSerializer.Serialize(new
+        {
+            status = Text(report.Status),
+            database = report.Entries.TryGetValue("database", out var database) ? Text(database.Status) : "unknown",
+        }));
+    },
 });
 
 await app.RunAsync();

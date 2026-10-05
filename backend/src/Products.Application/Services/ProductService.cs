@@ -19,8 +19,8 @@ public class ProductService(
     // GET /api/products: every filter optional, combined with AND.
     public async Task<List<ProductResponse>> GetAllAsync(ProductQuery query, CancellationToken cancellationToken)
     {
-        EnsureValidRange(query.MinStock, query.MaxStock, ErrorCode.InvalidStockRange, "stock");
-        EnsureValidRange(query.MinPrice, query.MaxPrice, ErrorCode.InvalidPriceRange, "price");
+        EnsureValidRange(query.MinStock, query.MaxStock, ErrorCode.InvalidStockRange, "stock", "minStock");
+        EnsureValidRange(query.MinPrice, query.MaxPrice, ErrorCode.InvalidPriceRange, "price", "minPrice");
 
         var filter = new ProductFilter
         {
@@ -41,7 +41,7 @@ public class ProductService(
     {
         if (string.IsNullOrWhiteSpace(name))
         {
-            throw new AppException(ErrorCode.ValidationFailed, "Search name is required.");
+            throw new AppException(ErrorCode.ValidationFailed, "Search name is required.", "name");
         }
 
         return await GetAllAsync(new ProductQuery { Search = name }, cancellationToken);
@@ -52,7 +52,7 @@ public class ProductService(
     {
         if (min < 0 || max < 0)
         {
-            throw new AppException(ErrorCode.InvalidStockRange, "Stock values cannot be negative.");
+            throw new AppException(ErrorCode.InvalidStockRange, "Stock values cannot be negative.", "min");
         }
 
         return await GetAllAsync(new ProductQuery { MinStock = min, MaxStock = max }, cancellationToken);
@@ -60,7 +60,7 @@ public class ProductService(
 
     public async Task<ProductResponse> GetByIdAsync(int id, CancellationToken cancellationToken)
     {
-        var product = await products.GetAsync(id, await CanSeeHiddenAsync(true, cancellationToken), cancellationToken)
+        var product = await products.GetAsync(id, await CanSeeHiddenAsync(cancellationToken), cancellationToken)
             ?? throw NotFound(id);
 
         return ProductResponse.From(product);
@@ -69,7 +69,7 @@ public class ProductService(
     public async Task<List<ProductHistoryResponse>> GetHistoryAsync(int id, CancellationToken cancellationToken)
     {
         // Same visibility rules as reading the product itself.
-        if (!await products.ExistsAsync(id, await CanSeeHiddenAsync(true, cancellationToken), cancellationToken))
+        if (!await products.ExistsAsync(id, await CanSeeHiddenAsync(cancellationToken), cancellationToken))
         {
             throw NotFound(id);
         }
@@ -96,24 +96,24 @@ public class ProductService(
         var user = await currentUser.RequireAsync(Permission.Edit, cancellationToken);
         await EnsureCategoryCanBeUsedAsync(request.CategoryId!.Value, currentCategoryId: null, cancellationToken);
 
-        var now = Now();
-        var product = new Product
-        {
-            Name = request.Name.Trim(),
-            Description = Clean(request.Description),
-            Price = request.Price!.Value,
-            Stock = request.Stock!.Value,
-            CategoryId = request.CategoryId.Value,
-            CreatedAt = now,
-            UpdatedAt = now,
-            UpdatedByUserId = user.Id,
-        };
-
         // The ID comes from the database, so save the product first, then record the metric with it.
+        // The product is created inside the work, so a retry starts from scratch.
         var id = await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
+            var now = Now();
+            var product = new Product
+            {
+                Name = request.Name,
+                Description = request.Description,
+                Price = request.Price!.Value,
+                Stock = request.Stock!.Value,
+                CategoryId = request.CategoryId.Value,
+                CreatedAt = now,
+                UpdatedAt = now,
+                UpdatedByUserId = user.Id,
+            };
             products.Add(product);
-            await unitOfWork.SaveChangesAsync(cancellationToken);
+            await SaveProductAsync(product.CategoryId, cancellationToken);
 
             metrics.Record(user.Id, MetricEntity.Product, MetricAction.Create, product.Id, product.Name);
             await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -132,8 +132,8 @@ public class ProductService(
 
         // Each line reads the old value, then assigns the new one.
         var changes = new ChangeList();
-        changes.Add("Name", product.Name, product.Name = request.Name.Trim());
-        changes.Add("Description", product.Description, product.Description = Clean(request.Description));
+        changes.Add("Name", product.Name, product.Name = request.Name);
+        changes.Add("Description", product.Description, product.Description = request.Description);
         changes.Add("Price", product.Price, product.Price = request.Price!.Value);
         changes.Add("Stock", product.Stock, product.Stock = request.Stock!.Value);
         changes.Add("Category", product.CategoryId, product.CategoryId = request.CategoryId.Value);
@@ -141,9 +141,9 @@ public class ProductService(
         product.UpdatedByUserId = user.Id;
 
         // Only saved if nobody changed the product since the client loaded it.
-        products.ExpectVersion(product, request.RowVersion);
+        products.ExpectVersion(product, request.RowVersion!);
         metrics.Record(user.Id, MetricEntity.Product, MetricAction.Update, product.Id, changes.ToString());
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await SaveProductAsync(product.CategoryId, cancellationToken);
 
         return await GetByIdAsync(id, cancellationToken);
     }
@@ -192,12 +192,13 @@ public class ProductService(
         {
             throw new AppException(
                 ErrorCode.InvalidQuantity,
-                $"Quantity must be between {ProductLimits.QuantityMin} and {ProductLimits.QuantityMax}.");
+                $"Quantity must be between {ProductLimits.QuantityMin} and {ProductLimits.QuantityMax}.",
+                "quantity");
         }
 
         var delta = increase ? quantity : -quantity;
 
-        var includeHidden = await CanSeeHiddenAsync(true, cancellationToken);
+        var includeHidden = await CanSeeHiddenAsync(cancellationToken);
         await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
             var newStock = await products.TryChangeStockAsync(id, delta, includeHidden, user.Id, Now(), cancellationToken);
@@ -227,9 +228,9 @@ public class ProductService(
         return await GetByIdAsync(id, cancellationToken);
     }
 
-    // Only editors and admins may see hidden products; for anyone else the flag is ignored.
-    private async Task<bool> CanSeeHiddenAsync(bool requested, CancellationToken cancellationToken) =>
-        requested && await currentUser.HasAsync(Permission.ViewHidden, cancellationToken);
+    // Only editors and admins may see hidden products.
+    private Task<bool> CanSeeHiddenAsync(CancellationToken cancellationToken) =>
+        currentUser.HasAsync(Permission.ViewHidden, cancellationToken);
 
     // Normal users only ever get active products, whatever they ask for (silently, so one UI works for every role).
     private async Task<IReadOnlyCollection<ProductStatus>> VisibleStatusesAsync(
@@ -238,11 +239,24 @@ public class ProductService(
             ? requested.Distinct().ToList()
             : [ProductStatus.Active];
 
-    private static void EnsureValidRange<T>(T? min, T? max, ErrorCode error, string what) where T : struct, IComparable<T>
+    private static void EnsureValidRange<T>(T? min, T? max, ErrorCode error, string what, string field) where T : struct, IComparable<T>
     {
         if (min is { } low && max is { } high && low.CompareTo(high) > 0)
         {
-            throw new AppException(error, $"Minimum {what} cannot be greater than maximum {what}.");
+            throw new AppException(error, $"Minimum {what} cannot be greater than maximum {what}.", field);
+        }
+    }
+
+    // A category deleted at the same moment makes the foreign key reject the save.
+    private async Task SaveProductAsync(int categoryId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch (ForeignKeyViolationException)
+        {
+            throw new AppException(ErrorCode.InvalidCategory, $"Category {categoryId} cannot be used.", "categoryId");
         }
     }
 
@@ -259,13 +273,11 @@ public class ProductService(
 
         if (categoryId == Category.UncategorizedId || !await categories.ExistsAsync(categoryId, cancellationToken))
         {
-            throw new AppException(ErrorCode.InvalidCategory, $"Category {categoryId} cannot be used.");
+            throw new AppException(ErrorCode.InvalidCategory, $"Category {categoryId} cannot be used.", "categoryId");
         }
     }
 
     private DateTime Now() => clock.GetUtcNow().UtcDateTime;
-
-    private static string? Clean(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
     private static AppException NotFound(int id) => new(ErrorCode.ProductNotFound, $"Product {id} was not found.");
 }

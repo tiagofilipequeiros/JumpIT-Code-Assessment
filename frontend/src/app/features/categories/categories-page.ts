@@ -19,7 +19,15 @@ import { CategoryFormDialog } from './category-form-dialog';
 
 @Component({
   selector: 'app-categories-page',
-  imports: [MatTableModule, MatButtonModule, MatIconModule, MatMenuModule, MatProgressBarModule, MatSlideToggleModule, MatTooltipModule],
+  imports: [
+    MatTableModule,
+    MatButtonModule,
+    MatIconModule,
+    MatMenuModule,
+    MatProgressBarModule,
+    MatSlideToggleModule,
+    MatTooltipModule,
+  ],
   templateUrl: './categories-page.html',
   // Coming back to the tab reloads, so changes made elsewhere (another user, Swagger) show up.
   host: { '(document:visibilitychange)': 'reloadWhenVisible()' },
@@ -38,7 +46,9 @@ export class CategoriesPage {
   protected readonly canToggle = computed(() => this.session.can(Permission.ToggleActive));
   protected readonly canDelete = computed(() => this.session.can(Permission.Delete));
   protected readonly canViewHidden = computed(() => this.session.can(Permission.ViewHidden));
-  protected readonly hasActions = computed(() => this.canEdit() || this.canToggle() || this.canDelete());
+  protected readonly hasActions = computed(
+    () => this.canEdit() || this.canToggle() || this.canDelete(),
+  );
   protected readonly columns = computed(() => [
     'name',
     'products',
@@ -95,7 +105,9 @@ export class CategoriesPage {
     const isActive = !category.isActive;
     this.categoriesService.setActive(category.id, isActive).subscribe({
       next: () => {
-        this.notifications.success(isActive ? FeedbackMessage.CategoryEnabled : FeedbackMessage.CategoryDisabled);
+        this.notifications.success(
+          isActive ? FeedbackMessage.CategoryEnabled : FeedbackMessage.CategoryDisabled,
+        );
         this.load();
       },
       error: (error) => this.notifications.error(error),

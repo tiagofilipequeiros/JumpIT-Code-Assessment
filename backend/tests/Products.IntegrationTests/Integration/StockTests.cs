@@ -1,7 +1,5 @@
 using System.Net;
 using Products.Application.Dtos.Products;
-using Products.Application.Dtos.Categories;
-using Products.Application.Dtos.Users;
 using Products.Domain.Entities;
 using Products.IntegrationTests.Infrastructure;
 using Products.TestSupport;
@@ -82,8 +80,11 @@ public class StockTests(SqlServerFixture sqlServer) : IntegrationTest(sqlServer)
         var product = await (await Anonymous.GetAsync("/api/products/100000")).ReadAsync<ProductResponse>();
         Assert.Equal(42, product.Stock);
 
+        // Same shape as model validation: the error names the field.
+        var body = await response.ReadAsync<Microsoft.AspNetCore.Mvc.ValidationProblemDetails>();
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal("InvalidQuantity", await response.ErrorCodeAsync());
+        Assert.Equal("InvalidQuantity", body.Extensions["code"]?.ToString());
+        Assert.Contains("quantity", body.Errors.Keys);
     }
 
     [Fact]

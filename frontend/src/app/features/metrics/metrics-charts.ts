@@ -1,5 +1,15 @@
-import { BarChartConfig, HeatmapChartConfig, TimelineChartConfig } from '../../shared/chart/chart-config';
-import { ActivityPoint, ProductStockHistory, ProductUnits, StockMovementPoint, UserActivity } from '../../core/models/metrics';
+import {
+  BarChartConfig,
+  HeatmapChartConfig,
+  TimelineChartConfig,
+} from '../../shared/chart/chart-config';
+import {
+  ActivityPoint,
+  ProductStockHistory,
+  ProductUnits,
+  StockMovementPoint,
+  UserActivity,
+} from '../../core/models/metrics';
 
 // Turns API metrics into chart configs. Pure functions, so they are easy to test and to reuse.
 // Series names keep the same colour slot everywhere (colour follows the entity, not its position).
@@ -29,7 +39,10 @@ export function movementsChart(points: StockMovementPoint[]): TimelineChartConfi
 }
 
 // colorSlots: product id -> colour slot, kept stable while products are added or removed from the selection.
-export function stockHistoryChart(history: ProductStockHistory[], colorSlots: Map<number, number>): TimelineChartConfig {
+export function stockHistoryChart(
+  history: ProductStockHistory[],
+  colorSlots: Map<number, number>,
+): TimelineChartConfig {
   return {
     type: 'timeline',
     style: 'step',
@@ -60,9 +73,18 @@ export function activityChart(points: ActivityPoint[]): TimelineChartConfig {
     stacked: true,
     unit: 'actions',
     series: [
-      activitySeries(ActivitySeries.Logins, points.map((p) => ({ x: p.date, y: p.logins }))),
-      activitySeries(ActivitySeries.Edits, points.map((p) => ({ x: p.date, y: p.edits }))),
-      activitySeries(ActivitySeries.StockChanges, points.map((p) => ({ x: p.date, y: p.stockChanges }))),
+      activitySeries(
+        ActivitySeries.Logins,
+        points.map((p) => ({ x: p.date, y: p.logins })),
+      ),
+      activitySeries(
+        ActivitySeries.Edits,
+        points.map((p) => ({ x: p.date, y: p.edits })),
+      ),
+      activitySeries(
+        ActivitySeries.StockChanges,
+        points.map((p) => ({ x: p.date, y: p.stockChanges })),
+      ),
     ],
   };
 }
@@ -75,9 +97,18 @@ export function actionsPerUserChart(users: UserActivity[]): BarChartConfig {
     unit: 'actions',
     categories: users.map((u) => `${u.name} (${u.role})`),
     series: [
-      activitySeries(ActivitySeries.Logins, users.map((u) => u.logins)),
-      activitySeries(ActivitySeries.Edits, users.map((u) => u.edits)),
-      activitySeries(ActivitySeries.StockChanges, users.map((u) => u.stockChanges)),
+      activitySeries(
+        ActivitySeries.Logins,
+        users.map((u) => u.logins),
+      ),
+      activitySeries(
+        ActivitySeries.Edits,
+        users.map((u) => u.edits),
+      ),
+      activitySeries(
+        ActivitySeries.StockChanges,
+        users.map((u) => u.stockChanges),
+      ),
     ],
   };
 }

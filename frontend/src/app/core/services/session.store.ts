@@ -1,4 +1,4 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { Permission } from '../enums/permission';
 import { User } from '../models/user';
 
@@ -10,7 +10,6 @@ export class SessionStore {
   private readonly currentUser = signal<User | null>(null);
 
   readonly user = this.currentUser.asReadonly();
-  readonly isSignedIn = computed(() => this.currentUser() !== null);
 
   can(permission: Permission): boolean {
     return this.currentUser()?.permissions.includes(permission) ?? false;

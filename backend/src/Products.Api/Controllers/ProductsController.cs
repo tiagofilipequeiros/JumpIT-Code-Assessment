@@ -21,7 +21,7 @@ public class ProductsController(ProductService productService) : ControllerBase
     /// <summary>Products whose name contains the given text (case-insensitive).</summary>
     [HttpGet("search")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
-    public Task<List<ProductResponse>> Search([FromQuery] string name, CancellationToken cancellationToken) =>
+    public Task<List<ProductResponse>> Search([FromQuery] string? name, CancellationToken cancellationToken) =>
         productService.SearchAsync(name, cancellationToken);
 
     /// <summary>Products with stock between min and max (both inclusive, both optional).</summary>
@@ -44,7 +44,7 @@ public class ProductsController(ProductService productService) : ControllerBase
     /// <summary>Requires the Editor or Admin role.</summary>
     [HttpPost]
     [ProducesResponseType<ProductResponse>(StatusCodes.Status201Created)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<ProductResponse>> Create(ProductRequest request, CancellationToken cancellationToken)
@@ -55,7 +55,9 @@ public class ProductsController(ProductService productService) : ControllerBase
 
     /// <summary>Requires the Editor or Admin role. Send the rowVersion you received; 409 if someone else changed the product.</summary>
     [HttpPut("{id:int}")]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public Task<ProductResponse> Update(int id, UpdateProductRequest request, CancellationToken cancellationToken) =>
@@ -64,6 +66,7 @@ public class ProductsController(ProductService productService) : ControllerBase
     /// <summary>Requires the Admin role.</summary>
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
@@ -74,16 +77,23 @@ public class ProductsController(ProductService productService) : ControllerBase
 
     /// <summary>Requires the Editor or Admin role.</summary>
     [HttpPost("{id:int}/enable")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public Task<ProductResponse> Enable(int id, CancellationToken cancellationToken) =>
         productService.SetActiveAsync(id, isActive: true, cancellationToken);
 
     /// <summary>Requires the Editor or Admin role.</summary>
     [HttpPost("{id:int}/disable")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public Task<ProductResponse> Disable(int id, CancellationToken cancellationToken) =>
         productService.SetActiveAsync(id, isActive: false, cancellationToken);
 
     [HttpPost("{id:int}/add-to-stock/{quantity:int}")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public Task<ProductResponse> AddToStock(int id, int quantity, CancellationToken cancellationToken) =>
@@ -91,6 +101,7 @@ public class ProductsController(ProductService productService) : ControllerBase
 
     [HttpPost("{id:int}/decrement-stock/{quantity:int}")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public Task<ProductResponse> DecrementStock(int id, int quantity, CancellationToken cancellationToken) =>

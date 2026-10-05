@@ -17,17 +17,35 @@ import { integer } from '../../core/utils/validators';
 // Add or remove stock. Closes with the updated product.
 @Component({
   selector: 'app-stock-dialog',
-  imports: [ReactiveFormsModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule],
+  imports: [
+    ReactiveFormsModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatIconModule,
+  ],
   template: `
     <h2 mat-dialog-title>Adjust stock</h2>
     <mat-dialog-content>
       <p>
-        <strong>{{ product.name }}</strong><br />
+        <strong>{{ product.name }}</strong
+        ><br />
         Current stock: <strong>{{ product.stock }}</strong>
       </p>
       <mat-form-field class="w-100">
         <mat-label>Quantity</mat-label>
-        <input matInput type="number" [formControl]="quantity" name="quantity" autocomplete="off" min="1" step="1" inputmode="numeric" cdkFocusInitial />
+        <input
+          matInput
+          type="number"
+          [formControl]="quantity"
+          name="quantity"
+          autocomplete="off"
+          min="1"
+          step="1"
+          inputmode="numeric"
+          cdkFocusInitial
+        />
         <mat-error>{{ errorMessage(quantity) }}</mat-error>
       </mat-form-field>
     </mat-dialog-content>
@@ -69,16 +87,24 @@ export class StockDialog {
         ? this.productsService.addToStock(this.product.id, quantity)
         : this.productsService.decrementStock(this.product.id, quantity);
 
-    this.saving.set(true);
+    this.setSaving(true);
     request$.subscribe({
       next: (updated) => {
-        this.notifications.success(direction > 0 ? FeedbackMessage.StockAdded : FeedbackMessage.StockRemoved);
+        this.notifications.success(
+          direction > 0 ? FeedbackMessage.StockAdded : FeedbackMessage.StockRemoved,
+        );
         this.dialogRef.close(updated);
       },
       error: (error) => {
-        this.saving.set(false);
+        this.setSaving(false);
         this.notifications.error(error);
       },
     });
+  }
+
+  // While saving, the dialog can't be closed: the page must hear about the result to refresh the list.
+  private setSaving(saving: boolean): void {
+    this.saving.set(saving);
+    this.dialogRef.disableClose = saving;
   }
 }

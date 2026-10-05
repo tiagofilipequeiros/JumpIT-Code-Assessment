@@ -9,5 +9,6 @@
     <Project Path="backend/tests/Products.UnitTests/Products.UnitTests.csproj" />
     <Project Path="backend/tests/Products.IntegrationTests/Products.IntegrationTests.csproj" />
     <Project Path="backend/tests/Products.AcceptanceTests/Products.AcceptanceTests.csproj" />
+    <Project Path="backend/tests/Products.TestSupport/Products.TestSupport.csproj" />
   </Folder>
 </Solution>

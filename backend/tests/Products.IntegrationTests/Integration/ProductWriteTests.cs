@@ -1,7 +1,5 @@
 using System.Net;
 using Products.Application.Dtos.Products;
-using Products.Application.Dtos.Categories;
-using Products.Application.Dtos.Users;
 using Products.Domain.Entities;
 using Products.IntegrationTests.Infrastructure;
 using Products.TestSupport;
@@ -64,9 +62,62 @@ public class ProductWriteTests(SqlServerFixture sqlServer) : IntegrationTest(sql
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Equal("ValidationFailed", body.Extensions["code"]?.ToString());
-        Assert.Contains("Name", body.Errors.Keys);
-        Assert.Contains("Price", body.Errors.Keys);
-        Assert.Contains("CategoryId", body.Errors.Keys);
+        Assert.Contains("name", body.Errors.Keys);
+        Assert.Contains("price", body.Errors.Keys);
+        Assert.Contains("categoryId", body.Errors.Keys);
+    }
+
+    [Fact]
+    public async Task Names_are_trimmed_before_the_length_rule_applies()
+    {
+        var response = await AsEditor.PostJsonAsync("/api/products", new { name = "  a  ", price = 1m, stock = 1, categoryId = 2 });
+        var body = await response.ReadAsync<Microsoft.AspNetCore.Mvc.ValidationProblemDetails>();
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("name", body.Errors.Keys);
+    }
+
+    [Fact]
+    public async Task Update_without_row_version_is_a_validation_error_not_a_conflict()
+    {
+        var response = await AsEditor.PutJsonAsync("/api/products/100000", new { name = "Lens", price = 10m, stock = 1, categoryId = 2 });
+        var body = await response.ReadAsync<Microsoft.AspNetCore.Mvc.ValidationProblemDetails>();
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("rowVersion", body.Errors.Keys);
+    }
+
+    [Fact]
+    public async Task Update_of_unknown_product_is_404()
+    {
+        var response = await AsEditor.PutJsonAsync("/api/products/999999", new
+        {
+            name = "Lens", price = 10m, stock = 1, categoryId = 2, rowVersion = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 },
+        });
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal("ProductNotFound", await response.ErrorCodeAsync());
+    }
+
+    [Fact]
+    public async Task Delete_of_unknown_product_is_404()
+    {
+        var response = await AsAdmin.DeleteAsync("/api/products/999999");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Running_out_of_ids_is_a_clear_conflict_not_a_server_error()
+    {
+        await Api.WithDbAsync(db => db.Database.ExecuteSqlRawAsync("ALTER SEQUENCE ProductIds RESTART WITH 999999"));
+
+        var last = await AsEditor.PostJsonAsync("/api/products", NewProduct("Last one"));
+        var tooMany = await AsEditor.PostJsonAsync("/api/products", NewProduct("One too many"));
+
+        Assert.Equal(999999, (await last.ReadAsync<ProductResponse>()).Id);
+        Assert.Equal(HttpStatusCode.Conflict, tooMany.StatusCode);
+        Assert.Equal("IdRangeExhausted", await tooMany.ErrorCodeAsync());
     }
 
     [Fact]

@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -16,14 +16,27 @@ import { errorMessage } from '../../core/utils/form-errors';
 // Create or rename a category. Closes with the saved category, or 'reload' after a conflict.
 @Component({
   selector: 'app-category-form-dialog',
-  imports: [ReactiveFormsModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatButtonModule],
+  imports: [
+    ReactiveFormsModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+  ],
   template: `
     <h2 mat-dialog-title>{{ category ? 'Rename category' : 'New category' }}</h2>
-    <form (ngSubmit)="save()" novalidate>
+    <form [formGroup]="form" (ngSubmit)="save()" novalidate>
       <mat-dialog-content>
         <mat-form-field class="w-100">
           <mat-label>Name</mat-label>
-          <input matInput [formControl]="name" name="name" autocomplete="off" [maxlength]="limits.NameMaxLength" cdkFocusInitial />
+          <input
+            matInput
+            formControlName="name"
+            name="name"
+            autocomplete="off"
+            [maxlength]="limits.NameMaxLength"
+            cdkFocusInitial
+          />
           <mat-hint align="end">{{ name.value.length }} / {{ limits.NameMaxLength }}</mat-hint>
           <mat-error>{{ errorMessage(name) }}</mat-error>
         </mat-form-field>
@@ -44,14 +57,18 @@ export class CategoryFormDialog {
   protected readonly limits = CategoryLimits;
   protected readonly errorMessage = errorMessage;
   protected readonly saving = signal(false);
-  protected readonly name = new FormControl(this.category?.name ?? '', {
-    nonNullable: true,
-    validators: [
-      Validators.required,
-      Validators.minLength(CategoryLimits.NameMinLength),
-      Validators.maxLength(CategoryLimits.NameMaxLength),
-    ],
+  // A FormGroup bound with [formGroup], so (ngSubmit) fires instead of a native page submit.
+  protected readonly form = new FormGroup({
+    name: new FormControl(this.category?.name ?? '', {
+      nonNullable: true,
+      validators: [
+        Validators.required,
+        Validators.minLength(CategoryLimits.NameMinLength),
+        Validators.maxLength(CategoryLimits.NameMaxLength),
+      ],
+    }),
   });
+  protected readonly name = this.form.controls.name;
 
   protected save(): void {
     if (this.name.invalid) {
@@ -64,14 +81,16 @@ export class CategoryFormDialog {
       ? this.categoriesService.update(this.category.id, name, this.category.rowVersion)
       : this.categoriesService.create(name);
 
-    this.saving.set(true);
+    this.setSaving(true);
     save$.subscribe({
       next: (saved) => {
-        this.notifications.success(this.category ? FeedbackMessage.CategoryUpdated : FeedbackMessage.CategoryCreated);
+        this.notifications.success(
+          this.category ? FeedbackMessage.CategoryUpdated : FeedbackMessage.CategoryCreated,
+        );
         this.dialogRef.close(saved);
       },
       error: (error: unknown) => {
-        this.saving.set(false);
+        this.setSaving(false);
         this.notifications.error(error);
         if (error instanceof ApiError && error.code === ErrorCode.ConcurrencyConflict) {
           this.dialogRef.close('reload');
@@ -80,5 +99,11 @@ export class CategoryFormDialog {
         }
       },
     });
+  }
+
+  // While saving, the dialog can't be closed: the page must hear about the result to refresh the list.
+  private setSaving(saving: boolean): void {
+    this.saving.set(saving);
+    this.dialogRef.disableClose = saving;
   }
 }

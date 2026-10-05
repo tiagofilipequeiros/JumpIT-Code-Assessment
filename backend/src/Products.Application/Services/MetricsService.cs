@@ -31,7 +31,7 @@ public class MetricsService(IMetricsRepository metrics, CurrentUser currentUser,
         var ids = productIds.Distinct().ToList();
         if (ids.Count is 0 or > MaxStockHistoryProducts)
         {
-            throw new AppException(ErrorCode.ValidationFailed, $"Choose between 1 and {MaxStockHistoryProducts} products.");
+            throw new AppException(ErrorCode.ValidationFailed, $"Choose between 1 and {MaxStockHistoryProducts} products.", "productIds");
         }
 
         return await metrics.GetStockHistoryAsync(ids, PeriodStart(days), Now(), cancellationToken);
@@ -54,7 +54,7 @@ public class MetricsService(IMetricsRepository metrics, CurrentUser currentUser,
     {
         if (days is < 1 or > MaxDays)
         {
-            throw new AppException(ErrorCode.InvalidTimeRange, $"Days must be between 1 and {MaxDays}.");
+            throw new AppException(ErrorCode.InvalidTimeRange, $"Days must be between 1 and {MaxDays}.", "days");
         }
 
         return Now().Date.AddDays(-(days - 1));

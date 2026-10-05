@@ -1,6 +1,6 @@
 using Products.Application.Services;
 
-namespace Products.UnitTests;
+namespace Products.UnitTests.Services;
 
 public class ChangeListTests
 {

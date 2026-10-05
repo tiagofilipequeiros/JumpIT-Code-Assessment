@@ -13,7 +13,7 @@ public class MetricsController(MetricsService metricsService) : ControllerBase
     [HttpGet("products")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
-    public Task<ProductMetricsResponse> GetProductMetrics(CancellationToken cancellationToken, int days = 30) =>
+    public Task<ProductMetricsResponse> GetProductMetrics(int days = 30, CancellationToken cancellationToken = default) =>
         metricsService.GetProductMetricsAsync(days, cancellationToken);
 
     /// <summary>Stock level over time for 1 to 5 products, e.g. ?productIds=100000&amp;productIds=100005. Editor or Admin.</summary>
@@ -21,13 +21,13 @@ public class MetricsController(MetricsService metricsService) : ControllerBase
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public Task<List<ProductStockHistoryResponse>> GetStockHistory(
-        [FromQuery] int[] productIds, CancellationToken cancellationToken, int days = 30) =>
+        [FromQuery] int[] productIds, int days = 30, CancellationToken cancellationToken = default) =>
         metricsService.GetStockHistoryAsync(productIds, days, cancellationToken);
 
     /// <summary>User KPIs, activity per day, per user and per hour. Admin only (personal activity data).</summary>
     [HttpGet("users")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
-    public Task<UserMetricsResponse> GetUserMetrics(CancellationToken cancellationToken, int days = 30) =>
+    public Task<UserMetricsResponse> GetUserMetrics(int days = 30, CancellationToken cancellationToken = default) =>
         metricsService.GetUserMetricsAsync(days, cancellationToken);
 }

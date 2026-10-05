@@ -21,7 +21,10 @@ export function toTable(config: ChartConfig, formatTime: (iso: string) => string
     case 'bar':
       return {
         headers: ['', ...config.series.map((s) => s.name)],
-        rows: config.categories.map((category, i) => [category, ...config.series.map((s) => s.data[i] ?? 0)]),
+        rows: config.categories.map((category, i) => [
+          category,
+          ...config.series.map((s) => s.data[i] ?? 0),
+        ]),
       };
     case 'heatmap':
       return {

@@ -1,15 +1,31 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { CurrencyPipe, NgTemplateOutlet } from '@angular/common';
-import { Component, DestroyRef, computed, effect, inject, input, output, signal } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormControl,
+  FormGroup,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { debounceTime, distinctUntilChanged, filter, map } from 'rxjs';
+import { debounceTime, filter, map } from 'rxjs';
 import { ProductLimits } from '../../core/enums/limits';
 import {
   PRODUCT_STATUS_LABELS,
@@ -19,6 +35,7 @@ import {
 } from '../../core/enums/product-status';
 import { Category } from '../../core/models/category';
 import { NO_FILTERS, ProductFilters } from '../../core/models/product';
+import { integer } from '../../core/utils/validators';
 
 // Search reacts while typing, from this many characters (or when cleared).
 export const SEARCH_MIN_LENGTH = 3;
@@ -67,30 +84,42 @@ export class ProductFiltersBar {
   protected readonly search = new FormControl('', { nonNullable: true });
   protected readonly ranges = new FormGroup(
     {
-      minStock: new FormControl<number | null>(null, [Validators.min(0)]),
-      maxStock: new FormControl<number | null>(null, [Validators.min(0)]),
+      minStock: new FormControl<number | null>(null, [Validators.min(0), integer]),
+      maxStock: new FormControl<number | null>(null, [Validators.min(0), integer]),
       minPrice: new FormControl<number | null>(null, [Validators.min(0)]),
       maxPrice: new FormControl<number | null>(null, [Validators.min(0)]),
     },
-    { validators: [rangeOrder('minStock', 'maxStock', 'stockRange'), rangeOrder('minPrice', 'maxPrice', 'priceRange')] },
+    {
+      validators: [
+        rangeOrder('minStock', 'maxStock', 'stockRange'),
+        rangeOrder('minPrice', 'maxPrice', 'priceRange'),
+      ],
+    },
   );
 
   // Phones: only the search stays visible; the other filters open with a "Filters" button.
   protected readonly compact = toSignal(
-    inject(BreakpointObserver).observe('(max-width: 575.98px)').pipe(map((state) => state.matches)),
+    inject(BreakpointObserver)
+      .observe('(max-width: 575.98px)')
+      .pipe(map((state) => state.matches)),
     { initialValue: false },
   );
   protected readonly showFilters = signal(false);
   protected readonly showMore = signal(false);
   protected readonly searchTooShort = signal(false);
   protected readonly rangeCount = computed(
-    () => ['minStock', 'maxStock', 'minPrice', 'maxPrice'].filter((k) => this.filters()[k as keyof ProductFilters] !== null).length,
+    () =>
+      ['minStock', 'maxStock', 'minPrice', 'maxPrice'].filter(
+        (k) => this.filters()[k as keyof ProductFilters] !== null,
+      ).length,
   );
   protected readonly hiddenFilterCount = computed(() => {
     const f = this.filters();
     return f.categoryIds.length + f.statuses.length + f.stockStatuses.length + this.rangeCount();
   });
-  protected readonly activeFilters = computed(() => this.describe(this.filters(), this.categories()));
+  protected readonly activeFilters = computed(() =>
+    this.describe(this.filters(), this.categories()),
+  );
 
   private readonly currency = inject(CurrencyPipe);
 
@@ -108,7 +137,12 @@ export class ProductFiltersBar {
       const rangeKeys = ['minStock', 'maxStock', 'minPrice', 'maxPrice'] as const;
       if (!previous || rangeKeys.some((key) => previous![key] !== current[key])) {
         this.ranges.setValue(
-          { minStock: current.minStock, maxStock: current.maxStock, minPrice: current.minPrice, maxPrice: current.maxPrice },
+          {
+            minStock: current.minStock,
+            maxStock: current.maxStock,
+            minPrice: current.minPrice,
+            maxPrice: current.maxPrice,
+          },
           { emitEvent: false },
         );
       }
@@ -128,7 +162,8 @@ export class ProductFiltersBar {
           this.searchTooShort.set(tooShort);
           return !tooShort;
         }),
-        distinctUntilChanged(),
+        // Compared with the applied value (not the previous keystroke): clearing sets the field without events.
+        filter((value) => value !== this.filters().search),
         takeUntilDestroyed(destroyRef),
       )
       .subscribe((search) => this.emit({ search }));
@@ -148,6 +183,10 @@ export class ProductFiltersBar {
           maxPrice: toNumber(value.maxPrice),
         }),
       );
+  }
+
+  protected hasNegative(): boolean {
+    return Object.values(this.ranges.controls).some((control) => control.hasError('min'));
   }
 
   protected emit(change: Partial<ProductFilters>): void {
@@ -181,17 +220,30 @@ export class ProductFiltersBar {
       });
     }
     for (const status of filters.statuses) {
-      active.push({ label: PRODUCT_STATUS_LABELS[status], remove: { statuses: filters.statuses.filter((s) => s !== status) } });
+      active.push({
+        label: PRODUCT_STATUS_LABELS[status],
+        remove: { statuses: filters.statuses.filter((s) => s !== status) },
+      });
     }
     for (const status of filters.stockStatuses) {
-      active.push({ label: STOCK_STATUS_LABELS[status], remove: { stockStatuses: filters.stockStatuses.filter((s) => s !== status) } });
+      active.push({
+        label: STOCK_STATUS_LABELS[status],
+        remove: { stockStatuses: filters.stockStatuses.filter((s) => s !== status) },
+      });
     }
     if (filters.minStock !== null || filters.maxStock !== null) {
-      active.push({ label: `Stock ${range(filters.minStock, filters.maxStock, String)}`, remove: { minStock: null, maxStock: null } });
+      active.push({
+        label: `Stock ${range(filters.minStock, filters.maxStock, String)}`,
+        remove: { minStock: null, maxStock: null },
+      });
     }
     if (filters.minPrice !== null || filters.maxPrice !== null) {
-      const money = (v: number) => this.currency.transform(v, 'EUR', 'symbol', '1.0-2') ?? String(v);
-      active.push({ label: `Price ${range(filters.minPrice, filters.maxPrice, money)}`, remove: { minPrice: null, maxPrice: null } });
+      const money = (v: number) =>
+        this.currency.transform(v, 'EUR', 'symbol', '1.0-2') ?? String(v);
+      active.push({
+        label: `Price ${range(filters.minPrice, filters.maxPrice, money)}`,
+        remove: { minPrice: null, maxPrice: null },
+      });
     }
     return active;
   }
@@ -206,7 +258,9 @@ function rangeOrder(minKey: string, maxKey: string, error: string) {
 }
 
 function toNumber(value: unknown): number | null {
-  return value === null || value === undefined || value === '' || Number.isNaN(Number(value)) ? null : Number(value);
+  return value === null || value === undefined || value === '' || Number.isNaN(Number(value))
+    ? null
+    : Number(value);
 }
 
 function range(min: number | null, max: number | null, format: (v: number) => string): string {

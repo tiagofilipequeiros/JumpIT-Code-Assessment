@@ -16,4 +16,6 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 COPY --from=build /app .
 EXPOSE 8080
+# Run as the unprivileged user that the .NET images provide.
+USER app
 ENTRYPOINT ["dotnet", "Products.Api.dll"]

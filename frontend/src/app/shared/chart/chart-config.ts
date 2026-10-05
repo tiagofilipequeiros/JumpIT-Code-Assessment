@@ -2,7 +2,7 @@
 // (theme, colours, zoom, tooltips, legend, empty state, table view).
 //
 // Example - a new bar chart is just:
-//   config: ChartConfig = { type: 'bar', categories: ['A', 'B'], series: [{ name: 'Units', values: [3, 5] }] };
+//   config: ChartConfig = { type: 'bar', categories: ['A', 'B'], series: [{ name: 'Units', data: [3, 5] }] };
 
 export type ChartConfig = TimelineChartConfig | BarChartConfig | HeatmapChartConfig;
 

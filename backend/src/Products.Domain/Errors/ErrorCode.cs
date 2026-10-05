@@ -23,4 +23,5 @@ public enum ErrorCode
     CategoryNameTaken,
     CategoryProtected,
     InvalidTimeRange,
+    IdRangeExhausted,
 }

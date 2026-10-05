@@ -66,6 +66,31 @@ public class CategoryAndUserTests(SqlServerFixture sqlServer) : IntegrationTest(
     }
 
     [Fact]
+    public async Task Renaming_to_a_taken_name_is_a_conflict()
+    {
+        var categories = await (await AsEditor.GetAsync("/api/categories")).ReadAsync<List<CategoryResponse>>();
+        var eyepieces = categories.Single(c => c.Name == "Eyepieces");
+
+        var response = await AsEditor.PutJsonAsync($"/api/categories/{eyepieces.Id}", new { name = "Objectives", rowVersion = eyepieces.RowVersion });
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal("CategoryNameTaken", await response.ErrorCodeAsync());
+    }
+
+    [Fact]
+    public async Task Renaming_with_an_old_row_version_is_a_conflict()
+    {
+        var categories = await (await AsEditor.GetAsync("/api/categories")).ReadAsync<List<CategoryResponse>>();
+        var eyepieces = categories.Single(c => c.Name == "Eyepieces");
+
+        await AsEditor.PutJsonAsync($"/api/categories/{eyepieces.Id}", new { name = "Oculars", rowVersion = eyepieces.RowVersion });
+        var stale = await AsAdmin.PutJsonAsync($"/api/categories/{eyepieces.Id}", new { name = "Lenses", rowVersion = eyepieces.RowVersion });
+
+        Assert.Equal(HttpStatusCode.Conflict, stale.StatusCode);
+        Assert.Equal("ConcurrencyConflict", await stale.ErrorCodeAsync());
+    }
+
+    [Fact]
     public async Task Disabling_a_category_hides_its_products_and_enabling_restores_them()
     {
         await AsEditor.PostAsync($"/api/categories/{Objectives}/disable", null);

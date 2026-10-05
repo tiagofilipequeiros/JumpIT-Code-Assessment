@@ -1,7 +1,5 @@
 using System.Net;
 using Products.Application.Dtos.Products;
-using Products.Application.Dtos.Categories;
-using Products.Application.Dtos.Users;
 using Products.Domain.Entities;
 using Products.IntegrationTests.Infrastructure;
 using Products.TestSupport;
@@ -81,6 +79,15 @@ public class ProductReadTests(SqlServerFixture sqlServer) : IntegrationTest(sqlS
     }
 
     [Fact]
+    public async Task Health_reports_the_database()
+    {
+        var response = await Anonymous.GetAsync("/api/health");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("""{"status":"ok","database":"ok"}""", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
     public async Task Search_without_name_is_rejected()
     {
         var response = await Anonymous.GetAsync("/api/products/search?name=%20");
@@ -99,7 +106,7 @@ public class ProductReadTests(SqlServerFixture sqlServer) : IntegrationTest(sqlS
     }
 
     [Fact]
-    public async Task Stock_level_with_only_max_returns_low_stock()
+    public async Task Stock_level_with_only_max_returns_products_up_to_it()
     {
         var products = await (await Anonymous.GetAsync("/api/products/stock-level?max=0")).ReadAsync<List<ProductResponse>>();
 

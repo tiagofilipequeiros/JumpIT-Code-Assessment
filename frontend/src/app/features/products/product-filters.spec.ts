@@ -8,7 +8,16 @@ function setup(filters: ProductFilters = NO_FILTERS, canFilterStatus = true) {
   fixture.componentRef.setInput('filters', filters);
   fixture.componentRef.setInput('canFilterStatus', canFilterStatus);
   fixture.componentRef.setInput('categories', [
-    { id: 2, name: 'Objectives', isActive: true, isProtected: false, productCount: 3, createdAt: '', updatedAt: '', rowVersion: '' },
+    {
+      id: 2,
+      name: 'Objectives',
+      isActive: true,
+      isProtected: false,
+      productCount: 3,
+      createdAt: '',
+      updatedAt: '',
+      rowVersion: '',
+    },
   ]);
   const emitted: ProductFilters[] = [];
   fixture.componentInstance.filtersChange.subscribe((value) => emitted.push(value));
@@ -38,6 +47,18 @@ describe('ProductFiltersBar', () => {
     expect(emitted.at(-1)?.search).toBe('len');
   });
 
+  it('applies the same search again after it was cleared', () => {
+    const { fixture, emitted, type } = setup({ ...NO_FILTERS, search: 'lens' });
+
+    // Cleared from outside (e.g. "Clear all"): the field empties without emitting.
+    fixture.componentRef.setInput('filters', NO_FILTERS);
+    fixture.detectChanges();
+    type('lens');
+    vi.advanceTimersByTime(400);
+
+    expect(emitted.at(-1)?.search).toBe('lens');
+  });
+
   it('waits until the user stops typing', () => {
     const { emitted, type } = setup();
 
@@ -50,7 +71,12 @@ describe('ProductFiltersBar', () => {
   });
 
   it('keeps the other filters when the search changes (AND, not replace)', () => {
-    const current = { ...NO_FILTERS, categoryIds: [2], stockStatuses: [StockStatus.LowStock], maxPrice: 300 };
+    const current = {
+      ...NO_FILTERS,
+      categoryIds: [2],
+      stockStatuses: [StockStatus.LowStock],
+      maxPrice: 300,
+    };
     const { emitted, type } = setup(current);
 
     type('lens');
@@ -60,10 +86,19 @@ describe('ProductFiltersBar', () => {
   });
 
   it('shows one removable chip per active filter', () => {
-    const current = { ...NO_FILTERS, search: 'lens', categoryIds: [2], statuses: [ProductStatus.Disabled], minStock: 0, maxStock: 5 };
+    const current = {
+      ...NO_FILTERS,
+      search: 'lens',
+      categoryIds: [2],
+      statuses: [ProductStatus.Disabled],
+      minStock: 0,
+      maxStock: 5,
+    };
     const { element, emitted } = setup(current);
 
-    const chips = [...element.querySelectorAll('mat-chip')].map((c) => c.textContent?.replace('cancel', '').trim());
+    const chips = [...element.querySelectorAll('mat-chip')].map((c) =>
+      c.textContent?.replace('cancel', '').trim(),
+    );
     expect(chips).toEqual(['"lens"', 'Objectives', 'Disabled', 'Stock 0–5']);
 
     element.querySelectorAll<HTMLButtonElement>('mat-chip button')[1].click();
@@ -73,14 +108,18 @@ describe('ProductFiltersBar', () => {
   it('clears everything at once', () => {
     const { element, emitted } = setup({ ...NO_FILTERS, search: 'lens', minPrice: 10 });
 
-    [...element.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.includes('Clear all'))!.click();
+    [...element.querySelectorAll<HTMLButtonElement>('button')]
+      .find((b) => b.textContent?.includes('Clear all'))!
+      .click();
 
     expect(emitted.at(-1)).toEqual(NO_FILTERS);
   });
 
   it('does not apply a range where min is above max, and says why', () => {
     const { fixture, element, emitted } = setup();
-    [...element.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.includes('Ranges'))!.click();
+    [...element.querySelectorAll<HTMLButtonElement>('button')]
+      .find((b) => b.textContent?.includes('Ranges'))!
+      .click();
     fixture.detectChanges();
 
     const set = (name: string, value: string) => {
@@ -100,7 +139,9 @@ describe('ProductFiltersBar', () => {
   it('hides the product status filter from normal users', () => {
     const { element } = setup(NO_FILTERS, false);
 
-    const labels = [...element.querySelectorAll('mat-label')].map((label) => label.textContent?.trim());
+    const labels = [...element.querySelectorAll('mat-label')].map((label) =>
+      label.textContent?.trim(),
+    );
     expect(labels).not.toContain('Status');
     expect(labels).toContain('Stock status');
   });

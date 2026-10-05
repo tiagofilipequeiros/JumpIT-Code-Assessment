@@ -21,7 +21,7 @@ Product management API (ASP.NET Core 10, EF Core, SQL Server) with an Angular 22
 
 ## Quick start
 
-Needs Docker.
+Needs Docker (with about 2 GB of memory for SQL Server). Ports 4200, 8080 and 1433 must be free: a locally installed SQL Server also uses 1433 (stop it, or change the left side of `"1433:1433"` in `docker-compose.yml`). On Apple Silicon, SQL Server runs through Docker Desktop's x86 emulation (Rosetta), which must be enabled.
 
 ```
 docker compose up --build
@@ -49,6 +49,14 @@ There is no login page and no password (see [Users and roles](#users-and-roles))
 | 4 | Taylor User | taylor@example.com | User | view and change stock |
 
 **In Swagger:** click **Authorize** and enter a user Id. Reads work without a user; changes need one.
+
+**From the command line**, send the user in the `X-User-Id` header:
+
+```
+curl -X POST http://localhost:8080/api/products/100000/decrement-stock/2 -H "X-User-Id: 3"
+curl -X POST http://localhost:8080/api/products -H "X-User-Id: 1" -H "Content-Type: application/json" \
+     -d '{"name":"Polarizing Filter","price":45.5,"stock":10,"categoryId":6}'
+```
 
 ## Review in 5 minutes
 
@@ -110,7 +118,7 @@ Dependencies point inwards. The Application layer does not know EF Core: it talk
 | Atomic stock update (`UPDATE … WHERE`) | Read, check, then save | Read-then-write loses updates under concurrency. A test sends 10 parallel decrements on a stock of 3: exactly 3 succeed. A check constraint (`Stock >= 0`) is the last line of defence. |
 | RowVersion on edits | Last write wins | Two people editing the same product get a `409 ConcurrencyConflict` instead of silently overwriting each other. |
 | Temporal table for product history | An audit table written by the code | SQL Server keeps every version automatically, also for changes made outside the API. Ties the project to SQL Server. |
-| Retry policy (EF execution strategy) | No retries | Retries transient SQL errors, and SQL Server error 13535 (a temporal-table conflict under concurrency, found by the concurrency tests). Transactions run inside the strategy, so a retry repeats the whole unit. |
+| Retry policy (EF execution strategy) | No retries | Retries transient SQL errors, and SQL Server error 13535 (a temporal-table conflict under concurrency, found by the concurrency tests). Transactions run inside the strategy and a retry starts from a clean change tracker, so it repeats the whole unit without duplicating anything. |
 | Expected errors as exceptions + one global handler | Result pattern | Keeps services short and every error response identical. The Result pattern is more explicit but needs checks at every call. |
 | Data annotations for validation | FluentValidation | Built in and enough for these rules; business rules (category usable, stock range) are in the services. |
 | Migrations applied on startup | Applied by the deployment pipeline (`dotnet ef migrations bundle`) | Simplest way to run locally. EF Core takes a lock, so several instances starting together are safe. Production would use a bundle. |
@@ -120,7 +128,8 @@ Dependencies point inwards. The Application layer does not know EF Core: it talk
 | Frontend served by nginx, forwarding `/api` | Browser calls the API on port 8080 | Same origin: no CORS, no API address in the frontend build. The same image runs everywhere; only `API_URL` changes. |
 | Metrics aggregated in SQL | Send raw events to the browser | Small responses; the browser only draws. |
 | Demo activity generated at startup | Activity in a migration | Metric dates must be relative to "now" (a 30-day chart must show the last 30 days); migrations can only hold fixed dates. |
-| Error-only logging (level `Warning`) | Default logging | Only unexpected failures are logged (with trace id), ready for Application Insights. Expected errors go to the client, not the log. |
+| Error-only logging (level `Warning`) | Default logging | Only unexpected failures are logged (with trace id), ready for Application Insights. Expected errors go to the client, not the log; a client that disconnects is not an error. |
+| Health check (`/api/health`) | A plain endpoint | ASP.NET Core health checks: `503` when the database doesn't answer, so a load balancer or orchestrator can react. |
 
 ## Assumptions
 
@@ -178,11 +187,14 @@ The demo activity is deterministic (fixed random seed). It is simulated backward
 
 ## API
 
-All responses are JSON; enums are strings. Errors are always [ProblemDetails](https://www.rfc-editor.org/rfc/rfc9457) with a `code`:
+All responses are JSON; enums are strings. Errors are always [ProblemDetails](https://www.rfc-editor.org/rfc/rfc9457) with a `code`; errors about an input also name the field in `errors`, like model validation does:
 
 ```json
 { "status": 409, "title": "Not enough stock.", "detail": "Cannot remove 4 from product 100002: not enough stock.", "code": "InsufficientStock" }
+{ "status": 400, "title": "Quantity is out of the allowed range.", "code": "InvalidQuantity", "errors": { "quantity": ["Quantity must be between 1 and 100000."] } }
 ```
+
+Success codes: `201` with a `Location` header for creates, `204` for deletes, `200` with the resource otherwise.
 
 | Method | Endpoint | Who |
 |---|---|---|
@@ -220,7 +232,7 @@ Every product response includes `status` and `stockStatus`, computed by the API,
 
 ## Running parts separately
 
-Backend (needs the database container):
+Needs the .NET 10 SDK and Node 24. Backend (needs the database container):
 
 ```
 docker compose up -d db
@@ -249,14 +261,18 @@ dotnet test
 | `Products.IntegrationTests` | The API over HTTP against SQL Server: every endpoint, roles, edge cases, concurrency (parallel creates, parallel stock decrements, duplicate category names), metrics, demo seeding |
 | `Products.AcceptanceTests` | BDD scenarios in plain English (Reqnroll / Gherkin) describing user outcomes |
 
-Frontend (Vitest):
+Without Docker, only the unit tests run: `dotnet test --project backend/tests/Products.UnitTests`.
+
+Frontend (Vitest, ESLint, Prettier):
 
 ```
 cd frontend
-npm test
+npm test -- --watch=false
+npm run lint
+npm run format:check
 ```
 
-GitHub Actions runs all of them, the frontend build and the Docker image build on every push (`.github/workflows/ci.yml`).
+GitHub Actions (`.github/workflows/ci.yml`) runs on pushes to `main` and on pull requests: all backend tests, frontend lint, format check, tests and build, then `docker compose up` of the whole stack with a check that the app, the API and the seeded data answer.
 
 ## Database
 
@@ -299,7 +315,7 @@ frontend/
     features/                 products, categories, metrics pages
     shared/                   chart, stat tile, confirm dialog
   nginx/                      production web server config (template)
-.github/workflows/ci.yml      tests + builds on every push
+.github/workflows/ci.yml      tests, lint, builds and a full-stack check on pushes to main and PRs
 docker-compose.yml
 ```
 
@@ -313,7 +329,7 @@ Not asked for in the assessment. Added because they make the project closer to a
 - **UserMetrics** and the **Metrics tab** with a reusable chart component and demo activity.
 - **Error codes as enums** shared by API and UI; limits and messages in one place.
 - **Swagger** with an Authorize box, **health endpoint**, **error-only logging**.
-- **Docker Compose** for everything, nginx production frontend, **GitHub Actions CI**.
+- **Docker Compose** for everything, nginx production frontend (non-root API container, basic security headers), **GitHub Actions CI** with lint and a full-stack smoke test.
 - **Responsive UI**, URL keeps filters and views, skip link, table views for charts, reduced-motion support.
 - **Integration tests against real SQL Server** including concurrency, and **BDD** scenarios.
 
@@ -325,3 +341,8 @@ Not asked for in the assessment. Added because they make the project closer to a
 - Application Insights (connection string + package); logs already contain only real failures.
 - Migrations from the pipeline (`dotnet ef migrations bundle`) instead of on startup.
 - Dark mode.
+- A Content-Security-Policy header (the app loads Google Fonts and the charts inject styles, so it needs care).
+
+## Development notes
+
+Commits group finished, tested features rather than every intermediate step.

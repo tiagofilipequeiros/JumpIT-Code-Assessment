@@ -65,13 +65,14 @@ export class MetricsPage {
   protected readonly MetricsView = MetricsView;
   protected readonly timeRanges = TIME_RANGES;
   protected readonly maxStockProducts = MAX_STOCK_PRODUCTS;
-  protected readonly seriesColors = SERIES_COLORS;
 
   // Editors see product metrics; per-user activity is admin only.
   protected readonly canViewUsers = computed(() => this.session.can(Permission.ViewUserMetrics));
   // Initial state comes from the URL (?view=users&days=90), so a refresh or a shared link shows the same view.
   protected readonly view = signal(parseView(this.route.snapshot.queryParamMap.get('view')));
-  protected readonly days = signal<number>(parseDays(this.route.snapshot.queryParamMap.get('days')));
+  protected readonly days = signal<number>(
+    parseDays(this.route.snapshot.queryParamMap.get('days')),
+  );
 
   protected readonly productMetrics = signal<ProductMetrics | null>(null);
   protected readonly stockHistory = signal<ProductStockHistory[] | null>(null);
@@ -85,12 +86,24 @@ export class MetricsPage {
   // Each selected product keeps its colour while others are added or removed.
   private readonly colorSlots = new Map<number, number>();
 
-  protected readonly movementsConfig = computed(() => map(this.productMetrics(), (m) => movementsChart(m.movementsPerDay)));
-  protected readonly topRemovedConfig = computed(() => map(this.productMetrics(), (m) => topRemovedChart(m.topRemoved)));
-  protected readonly stockConfig = computed(() => map(this.stockHistory(), (h) => stockHistoryChart(h, this.colorSlots)));
-  protected readonly activityConfig = computed(() => map(this.userMetrics(), (m) => activityChart(m.activityPerDay)));
-  protected readonly perUserConfig = computed(() => map(this.userMetrics(), (m) => actionsPerUserChart(m.perUser)));
-  protected readonly heatmapConfig = computed(() => map(this.userMetrics(), (m) => activityHeatmap(m.perHour)));
+  protected readonly movementsConfig = computed(() =>
+    map(this.productMetrics(), (m) => movementsChart(m.movementsPerDay)),
+  );
+  protected readonly topRemovedConfig = computed(() =>
+    map(this.productMetrics(), (m) => topRemovedChart(m.topRemoved)),
+  );
+  protected readonly stockConfig = computed(() =>
+    map(this.stockHistory(), (h) => stockHistoryChart(h, this.colorSlots)),
+  );
+  protected readonly activityConfig = computed(() =>
+    map(this.userMetrics(), (m) => activityChart(m.activityPerDay)),
+  );
+  protected readonly perUserConfig = computed(() =>
+    map(this.userMetrics(), (m) => actionsPerUserChart(m.perUser)),
+  );
+  protected readonly heatmapConfig = computed(() =>
+    map(this.userMetrics(), (m) => activityHeatmap(m.perHour)),
+  );
   protected readonly periodLabel = computed(() => `Last ${this.days()} days`);
 
   private productSubscription?: Subscription;
@@ -104,6 +117,11 @@ export class MetricsPage {
       const view = this.view();
       const days = this.days();
       untracked(() => {
+        // Switched to a user without access while on this page: leave instead of showing stale data.
+        if (!this.session.can(Permission.ViewProductMetrics)) {
+          void this.router.navigate(['/']);
+          return;
+        }
         if (view === MetricsView.Users && !this.canViewUsers()) {
           this.view.set(MetricsView.Products);
           return;
@@ -116,7 +134,8 @@ export class MetricsPage {
     effect(() => {
       const ids = this.selectedProductIds();
       const days = this.days();
-      untracked(() => this.loadStockHistory(ids, days));
+      const view = this.view();
+      untracked(() => view === MetricsView.Products && this.loadStockHistory(ids, days));
     });
 
     this.productsService.getAll().subscribe({
@@ -144,10 +163,6 @@ export class MetricsPage {
     this.selectedProductIds.set(kept);
   }
 
-  protected colorOf(productId: number): string {
-    return SERIES_COLORS[this.colorSlots.get(productId) ?? 0];
-  }
-
   private load(view: MetricsView, days: number): void {
     if (view === MetricsView.Products) {
       this.loadProductMetrics(days);
@@ -165,7 +180,9 @@ export class MetricsPage {
         this.loadingProducts.set(false);
         // First visit: show the products that moved the most.
         if (this.selectedProductIds().length === 0 && metrics.topRemoved.length > 0) {
-          this.selectProducts(metrics.topRemoved.slice(0, DEFAULT_STOCK_PRODUCTS).map((p) => p.productId));
+          this.selectProducts(
+            metrics.topRemoved.slice(0, DEFAULT_STOCK_PRODUCTS).map((p) => p.productId),
+          );
         }
       },
       error: (error) => {
@@ -179,6 +196,7 @@ export class MetricsPage {
     this.stockSubscription?.unsubscribe();
     if (ids.length === 0) {
       this.stockHistory.set([]);
+      this.loadingStock.set(false);
       return;
     }
 

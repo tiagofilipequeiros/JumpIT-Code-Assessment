@@ -8,7 +8,12 @@ const editor: User = {
   name: 'Erin Editor',
   email: 'editor@example.com',
   role: Role.Editor,
-  permissions: [Permission.ChangeStock, Permission.Edit, Permission.ToggleActive, Permission.ViewHidden],
+  permissions: [
+    Permission.ChangeStock,
+    Permission.Edit,
+    Permission.ToggleActive,
+    Permission.ViewHidden,
+  ],
 };
 
 describe('SessionStore', () => {

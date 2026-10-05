@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Component, input } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { Permission, Role } from '../../core/enums/permission';
 import { ProductMetrics } from '../../core/models/metrics';
@@ -28,9 +28,20 @@ const metrics: ProductMetrics = {
 };
 
 async function render(role: Role, permissions: Permission[]) {
-  TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])] });
-  TestBed.overrideComponent(MetricsPage, { remove: { imports: [Chart] }, add: { imports: [ChartStub] } });
-  TestBed.inject(SessionStore).setUser({ id: 1, name: role, email: 'x@example.com', role, permissions });
+  TestBed.configureTestingModule({
+    providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
+  });
+  TestBed.overrideComponent(MetricsPage, {
+    remove: { imports: [Chart] },
+    add: { imports: [ChartStub] },
+  });
+  TestBed.inject(SessionStore).setUser({
+    id: 1,
+    name: role,
+    email: 'x@example.com',
+    role,
+    permissions,
+  });
 
   const fixture = TestBed.createComponent(MetricsPage);
   fixture.detectChanges();
@@ -50,6 +61,27 @@ async function render(role: Role, permissions: Permission[]) {
 }
 
 describe('MetricsPage', () => {
+  it('leaves the page when the new user may not see metrics', async () => {
+    const page = await render(Role.Admin, [
+      Permission.ViewProductMetrics,
+      Permission.ViewUserMetrics,
+    ]);
+    const router = TestBed.inject(Router);
+    const navigate = vi.spyOn(router, 'navigate');
+
+    TestBed.inject(SessionStore).setUser({
+      id: 3,
+      name: 'Sam',
+      email: 'sam@example.com',
+      role: Role.User,
+      permissions: [Permission.ChangeStock],
+    });
+    TestBed.tick();
+
+    expect(navigate).toHaveBeenCalledWith(['/']);
+    expect(page).toBeTruthy();
+  });
+
   it('shows product KPIs and charts', async () => {
     const page = await render(Role.Editor, [Permission.ViewProductMetrics]);
 
@@ -65,7 +97,10 @@ describe('MetricsPage', () => {
   });
 
   it('offers the Users view to admins', async () => {
-    const page = await render(Role.Admin, [Permission.ViewProductMetrics, Permission.ViewUserMetrics]);
+    const page = await render(Role.Admin, [
+      Permission.ViewProductMetrics,
+      Permission.ViewUserMetrics,
+    ]);
 
     expect(page.textContent).toContain('Users');
   });

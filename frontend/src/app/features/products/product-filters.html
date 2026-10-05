@@ -66,12 +66,30 @@
         <legend>Stock</legend>
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>Min</mat-label>
-          <input matInput type="number" inputmode="numeric" name="minStock" autocomplete="off" min="0" [max]="stockMax" formControlName="minStock" />
+          <input
+            matInput
+            type="number"
+            inputmode="numeric"
+            name="minStock"
+            autocomplete="off"
+            min="0"
+            [max]="stockMax"
+            formControlName="minStock"
+          />
         </mat-form-field>
         <span class="dash" aria-hidden="true">–</span>
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>Max</mat-label>
-          <input matInput type="number" inputmode="numeric" name="maxStock" autocomplete="off" min="0" [max]="stockMax" formControlName="maxStock" />
+          <input
+            matInput
+            type="number"
+            inputmode="numeric"
+            name="maxStock"
+            autocomplete="off"
+            min="0"
+            [max]="stockMax"
+            formControlName="maxStock"
+          />
         </mat-form-field>
       </fieldset>
 
@@ -79,12 +97,32 @@
         <legend>Price (€)</legend>
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>Min</mat-label>
-          <input matInput type="number" inputmode="decimal" name="minPrice" autocomplete="off" min="0" step="0.01" [max]="priceMax" formControlName="minPrice" />
+          <input
+            matInput
+            type="number"
+            inputmode="decimal"
+            name="minPrice"
+            autocomplete="off"
+            min="0"
+            step="0.01"
+            [max]="priceMax"
+            formControlName="minPrice"
+          />
         </mat-form-field>
         <span class="dash" aria-hidden="true">–</span>
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>Max</mat-label>
-          <input matInput type="number" inputmode="decimal" name="maxPrice" autocomplete="off" min="0" step="0.01" [max]="priceMax" formControlName="maxPrice" />
+          <input
+            matInput
+            type="number"
+            inputmode="decimal"
+            name="maxPrice"
+            autocomplete="off"
+            min="0"
+            step="0.01"
+            [max]="priceMax"
+            formControlName="maxPrice"
+          />
         </mat-form-field>
       </fieldset>
 
@@ -95,7 +133,13 @@
         @if (ranges.hasError('priceRange')) {
           <span class="error">Minimum price is higher than maximum price.</span>
         }
-        @if (ranges.invalid && !ranges.hasError('stockRange') && !ranges.hasError('priceRange')) {
+        @if (
+          ranges.controls.minStock.hasError('integer') ||
+          ranges.controls.maxStock.hasError('integer')
+        ) {
+          <span class="error">Stock must be a whole number.</span>
+        }
+        @if (hasNegative()) {
           <span class="error">Values cannot be negative.</span>
         }
       </div>
@@ -126,51 +170,58 @@
 </section>
 
 <ng-template #selectFilters>
+  <mat-form-field class="select" appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Category</mat-label>
+    <mat-select
+      multiple
+      [value]="filters().categoryIds"
+      (valueChange)="emit({ categoryIds: $event })"
+    >
+      <mat-select-trigger>
+        {{ categoryName(filters().categoryIds[0]) }}
+        @if (filters().categoryIds.length > 1) {
+          <span class="more">+{{ filters().categoryIds.length - 1 }}</span>
+        }
+      </mat-select-trigger>
+      @for (category of categories(); track category.id) {
+        <mat-option [value]="category.id">{{ category.name }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  @if (canFilterStatus()) {
     <mat-form-field class="select" appearance="outline" subscriptSizing="dynamic">
-      <mat-label>Category</mat-label>
-      <mat-select multiple [value]="filters().categoryIds" (valueChange)="emit({ categoryIds: $event })">
+      <mat-label>Status</mat-label>
+      <mat-select multiple [value]="filters().statuses" (valueChange)="emit({ statuses: $event })">
         <mat-select-trigger>
-          {{ categoryName(filters().categoryIds[0]) }}
-          @if (filters().categoryIds.length > 1) {
-            <span class="more">+{{ filters().categoryIds.length - 1 }}</span>
+          {{ statusLabels[filters().statuses[0]] }}
+          @if (filters().statuses.length > 1) {
+            <span class="more">+{{ filters().statuses.length - 1 }}</span>
           }
         </mat-select-trigger>
-        @for (category of categories(); track category.id) {
-          <mat-option [value]="category.id">{{ category.name }}</mat-option>
+        @for (status of productStatuses; track status) {
+          <mat-option [value]="status">{{ statusLabels[status] }}</mat-option>
         }
       </mat-select>
     </mat-form-field>
+  }
 
-    @if (canFilterStatus()) {
-      <mat-form-field class="select" appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Status</mat-label>
-        <mat-select multiple [value]="filters().statuses" (valueChange)="emit({ statuses: $event })">
-          <mat-select-trigger>
-            {{ statusLabels[filters().statuses[0]] }}
-            @if (filters().statuses.length > 1) {
-              <span class="more">+{{ filters().statuses.length - 1 }}</span>
-            }
-          </mat-select-trigger>
-          @for (status of productStatuses; track status) {
-            <mat-option [value]="status">{{ statusLabels[status] }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-    }
-
-    <mat-form-field class="select" appearance="outline" subscriptSizing="dynamic">
-      <mat-label>Stock status</mat-label>
-      <mat-select multiple [value]="filters().stockStatuses" (valueChange)="emit({ stockStatuses: $event })">
-        <mat-select-trigger>
-          {{ stockLabels[filters().stockStatuses[0]] }}
-          @if (filters().stockStatuses.length > 1) {
-            <span class="more">+{{ filters().stockStatuses.length - 1 }}</span>
-          }
-        </mat-select-trigger>
-        @for (status of stockStatuses; track status) {
-          <mat-option [value]="status">{{ stockLabels[status] }}</mat-option>
+  <mat-form-field class="select" appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Stock status</mat-label>
+    <mat-select
+      multiple
+      [value]="filters().stockStatuses"
+      (valueChange)="emit({ stockStatuses: $event })"
+    >
+      <mat-select-trigger>
+        {{ stockLabels[filters().stockStatuses[0]] }}
+        @if (filters().stockStatuses.length > 1) {
+          <span class="more">+{{ filters().stockStatuses.length - 1 }}</span>
         }
-      </mat-select>
-    </mat-form-field>
-
+      </mat-select-trigger>
+      @for (status of stockStatuses; track status) {
+        <mat-option [value]="status">{{ stockLabels[status] }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
 </ng-template>

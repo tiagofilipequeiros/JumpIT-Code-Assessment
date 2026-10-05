@@ -1,5 +1,26 @@
+# .NET
 bin/
 obj/
+*.user
+*.suo
+.vs/
+TestResults/
+*.trx
+coverage*/
+
+# Node / Angular
 node_modules/
 dist/
 .angular/
+
+# Editors and OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Local settings and secrets
+.env
+.env.*
+appsettings.*.local.json

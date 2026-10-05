@@ -11,7 +11,14 @@ import { ProductsService } from '../../core/services/products.service';
 // Every version of a product (from the SQL Server temporal table), newest first.
 @Component({
   selector: 'app-history-dialog',
-  imports: [MatDialogModule, MatTableModule, MatButtonModule, MatProgressBarModule, DatePipe, CurrencyPipe],
+  imports: [
+    MatDialogModule,
+    MatTableModule,
+    MatButtonModule,
+    MatProgressBarModule,
+    DatePipe,
+    CurrencyPipe,
+  ],
   template: `
     <h2 mat-dialog-title>History · {{ product.name }}</h2>
     <mat-dialog-content>

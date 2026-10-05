@@ -30,14 +30,14 @@ public class CategoryService(
     public async Task<CategoryResponse> CreateAsync(CategoryRequest request, CancellationToken cancellationToken)
     {
         var user = await currentUser.RequireAsync(Permission.Edit, cancellationToken);
-        var name = request.Name.Trim();
+        var name = request.Name;
         await EnsureNameIsFreeAsync(name, exceptId: null, cancellationToken);
 
-        var now = Now();
-        var category = new Category { Name = name, CreatedAt = now, UpdatedAt = now };
-
+        // The category is created inside the work, so a retry starts from scratch.
         var id = await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
+            var now = Now();
+            var category = new Category { Name = name, CreatedAt = now, UpdatedAt = now };
             categories.Add(category);
             await SaveAsync(name, cancellationToken);
 
@@ -53,7 +53,7 @@ public class CategoryService(
     {
         var user = await currentUser.RequireAsync(Permission.Edit, cancellationToken);
         var category = await FindEditableAsync(id, cancellationToken);
-        var name = request.Name.Trim();
+        var name = request.Name;
         await EnsureNameIsFreeAsync(name, exceptId: id, cancellationToken);
 
         var changes = new ChangeList();
@@ -61,7 +61,7 @@ public class CategoryService(
         category.Name = name;
         category.UpdatedAt = Now();
 
-        categories.ExpectVersion(category, request.RowVersion);
+        categories.ExpectVersion(category, request.RowVersion!);
         metrics.Record(user.Id, MetricEntity.Category, MetricAction.Update, id, changes.ToString());
         await SaveAsync(name, cancellationToken);
 
@@ -80,7 +80,16 @@ public class CategoryService(
 
             categories.Remove(category);
             metrics.Record(user.Id, MetricEntity.Category, MetricAction.Delete, id, $"{category.Name}; {moved} product(s) moved to Uncategorized");
-            await unitOfWork.SaveChangesAsync(cancellationToken);
+            try
+            {
+                await unitOfWork.SaveChangesAsync(cancellationToken);
+            }
+            catch (ForeignKeyViolationException)
+            {
+                // A product was saved into this category after its products were moved: let the user try again.
+                throw new AppException(ErrorCode.ConcurrencyConflict, "Products were added to this category meanwhile. Try again.");
+            }
+
             return moved;
         }, cancellationToken);
     }
@@ -136,7 +145,7 @@ public class CategoryService(
     private DateTime Now() => clock.GetUtcNow().UtcDateTime;
 
     private static AppException NameTaken(string name) =>
-        new(ErrorCode.CategoryNameTaken, $"A category named '{name}' already exists.");
+        new(ErrorCode.CategoryNameTaken, $"A category named '{name}' already exists.", "name");
 
     private static AppException NotFound(int id) => new(ErrorCode.CategoryNotFound, $"Category {id} was not found.");
 }

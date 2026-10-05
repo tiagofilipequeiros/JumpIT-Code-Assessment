@@ -13,7 +13,7 @@ public class UserService(IUserRepository users, IUnitOfWork unitOfWork, UserMetr
     // "Login" = pick a user by email. No password on purpose; it only identifies who does what.
     public async Task<UserResponse> LoginAsync(string email, CancellationToken cancellationToken)
     {
-        var user = await users.GetByEmailAsync(email.Trim(), cancellationToken)
+        var user = await users.GetByEmailAsync(email, cancellationToken)
             ?? throw new AppException(ErrorCode.UserNotFound, $"No user with email '{email}'.");
 
         metrics.Record(user.Id, MetricEntity.User, MetricAction.Login, user.Id);

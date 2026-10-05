@@ -69,7 +69,11 @@ export class Chart {
     this.showTable.update((show) => !show);
   }
 
-  private async render(config: ChartConfig | null, element: HTMLElement | null, height: number): Promise<void> {
+  private async render(
+    config: ChartConfig | null,
+    element: HTMLElement | null,
+    height: number,
+  ): Promise<void> {
     if (!config || !element) {
       this.destroyChart();
       return;
@@ -95,7 +99,10 @@ export class Chart {
   }
 
   private formatTime(iso: string, config: ChartConfig): string {
-    const format = config.type === 'timeline' && config.precision === 'datetime' ? 'd MMM y, HH:mm' : 'EEE d MMM y';
+    const format =
+      config.type === 'timeline' && config.precision === 'datetime'
+        ? 'd MMM y, HH:mm'
+        : 'EEE d MMM y';
     return this.datePipe.transform(iso, format) ?? iso;
   }
 }
